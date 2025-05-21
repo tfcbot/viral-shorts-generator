@@ -4,6 +4,7 @@ import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Authenticated, Unauthenticated } from "convex/react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
   return (
@@ -72,9 +73,7 @@ function LandingContent() {
         </div>
         
         <div className="md:w-1/2">
-          <div className="bg-slate-200 dark:bg-slate-800 rounded-lg aspect-video flex items-center justify-center shadow-md">
-            <p className="text-slate-600 dark:text-slate-300 text-lg">Video Showcase Placeholder</p>
-          </div>
+          <ShortsCarousel />
         </div>
       </div>
       
@@ -151,6 +150,100 @@ function LandingContent() {
             answer="Our free plan allows you to create 3 shorts per month. Premium plans offer unlimited shorts generation to scale your channel faster."
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ShortsCarousel() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  // Auto-scroll effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (scrollRef.current && !isScrolling) {
+        scrollRef.current.scrollLeft += 1;
+        
+        // Reset to beginning when reaching the end
+        if (scrollRef.current.scrollLeft >= 
+            scrollRef.current.scrollWidth - scrollRef.current.clientWidth) {
+          scrollRef.current.scrollLeft = 0;
+        }
+      }
+    }, 20);
+    
+    return () => clearInterval(interval);
+  }, [isScrolling]);
+
+  // Mouse drag handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsScrolling(true);
+    setStartX(e.pageX - scrollRef.current!.offsetLeft);
+    setScrollLeft(scrollRef.current!.scrollLeft);
+  };
+
+  const handleMouseUp = () => {
+    setIsScrolling(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsScrolling(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isScrolling) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current!.offsetLeft;
+    const walk = (x - startX) * 2; // Scroll speed multiplier
+    scrollRef.current!.scrollLeft = scrollLeft - walk;
+  };
+
+  return (
+    <div 
+      className="relative overflow-hidden rounded-lg shadow-md"
+      style={{ height: '480px' }}
+    >
+      <div 
+        ref={scrollRef}
+        className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory h-full"
+        style={{ scrollBehavior: 'smooth' }}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMove}
+      >
+        {[1, 2, 3, 4, 5].map((num) => (
+          <div 
+            key={num} 
+            className="flex-shrink-0 w-[270px] h-[480px] snap-center mx-2 first:ml-0 last:mr-0"
+          >
+            <Image
+              src={`/images/carousel/shorts-${num}.svg`}
+              alt={`Viral Short Example ${num}`}
+              width={270}
+              height={480}
+              className="rounded-lg shadow-sm"
+            />
+          </div>
+        ))}
+      </div>
+      
+      <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+        {[1, 2, 3, 4, 5].map((num) => (
+          <button
+            key={num}
+            className="w-2 h-2 rounded-full bg-white bg-opacity-50 hover:bg-opacity-100 transition-opacity"
+            onClick={() => {
+              if (scrollRef.current) {
+                const itemWidth = 270 + 16; // Width + margin
+                scrollRef.current.scrollLeft = (num - 1) * itemWidth;
+              }
+            }}
+          />
+        ))}
       </div>
     </div>
   );
