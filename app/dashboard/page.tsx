@@ -52,17 +52,17 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold mb-4">Recent Videos</h2>
           
           {allShorts.length === 0 ? (
-            <p className="text-slate-600">You haven't generated any shorts yet.</p>
+            <p className="text-slate-600">You haven&apos;t generated any shorts yet.</p>
           ) : (
             <div className="space-y-4">
               {allShorts.slice(0, 5).map((short) => (
                 <div key={short._id} className="flex items-center gap-4">
                   <div className="w-16 h-12 bg-slate-200 rounded overflow-hidden">
                     {short.thumbnailUrl ? (
-                      <img
-                        src={short.thumbnailUrl}
-                        alt={short.title}
-                        className="w-full h-full object-cover"
+                      <div
+                        className="w-full h-full bg-cover bg-center"
+                        style={{ backgroundImage: `url(${short.thumbnailUrl})` }}
+                        aria-label={short.title}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
@@ -121,4 +121,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

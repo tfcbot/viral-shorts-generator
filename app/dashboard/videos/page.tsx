@@ -99,7 +99,7 @@ export default function VideosPage() {
             <div className="text-center py-12">
               <p className="text-slate-600">
                 {allShorts.length === 0
-                  ? "You haven't generated any shorts yet."
+                  ? "You haven&apos;t generated any shorts yet."
                   : "No videos match your filters."}
               </p>
             </div>
@@ -130,10 +130,10 @@ export default function VideosPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="w-24 h-16 bg-slate-200 rounded overflow-hidden">
                         {short.thumbnailUrl ? (
-                          <img
-                            src={short.thumbnailUrl}
-                            alt={short.title}
-                            className="w-full h-full object-cover"
+                          <div
+                            className="w-full h-full bg-cover bg-center"
+                            style={{ backgroundImage: `url(${short.thumbnailUrl})` }}
+                            aria-label={short.title}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-400">
@@ -306,4 +306,3 @@ export default function VideosPage() {
     </div>
   );
 }
-
