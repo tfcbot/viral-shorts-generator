@@ -47,6 +47,7 @@ export default function Home() {
 function LandingContent() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-12 md:py-24">
+      {/* Hero Section */}
       <div className="flex flex-col md:flex-row gap-12 items-center">
         <div className="md:w-1/2 space-y-6">
           <h1 className="text-4xl md:text-5xl font-bold leading-tight text-slate-900 dark:text-white">
@@ -73,10 +74,25 @@ function LandingContent() {
         </div>
         
         <div className="md:w-1/2">
-          <ShortsCarousel />
+          <div className="bg-slate-200 dark:bg-slate-800 rounded-lg aspect-video flex items-center justify-center shadow-md">
+            <p className="text-slate-600 dark:text-slate-300 text-lg">Video Showcase Placeholder</p>
+          </div>
         </div>
       </div>
       
+      {/* Shorts Showcase Section */}
+      <div className="mt-24">
+        <h2 className="text-3xl font-bold text-center mb-8 text-slate-900 dark:text-white">
+          Viral Shorts Examples
+        </h2>
+        <p className="text-xl text-slate-700 dark:text-slate-300 text-center max-w-3xl mx-auto mb-12">
+          Browse through our collection of viral shorts templates that have helped creators generate millions of views.
+        </p>
+        
+        <ShortsCarousel />
+      </div>
+      
+      {/* Features Section */}
       <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
         <FeatureCard 
           title="AI-Powered Content" 
@@ -202,48 +218,50 @@ function ShortsCarousel() {
   };
 
   return (
-    <div 
-      className="relative overflow-hidden rounded-lg shadow-md"
-      style={{ height: '480px' }}
-    >
+    <div className="max-w-5xl mx-auto">
       <div 
-        ref={scrollRef}
-        className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory h-full"
-        style={{ scrollBehavior: 'smooth' }}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        onMouseMove={handleMouseMove}
+        className="relative overflow-hidden rounded-lg shadow-md"
+        style={{ height: '480px' }}
       >
-        {[1, 2, 3, 4, 5].map((num) => (
-          <div 
-            key={num} 
-            className="flex-shrink-0 w-[270px] h-[480px] snap-center mx-2 first:ml-0 last:mr-0"
-          >
-            <Image
-              src={`/images/carousel/shorts-${num}.svg`}
-              alt={`Viral Short Example ${num}`}
-              width={270}
-              height={480}
-              className="rounded-lg shadow-sm"
+        <div 
+          ref={scrollRef}
+          className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory h-full"
+          style={{ scrollBehavior: 'smooth' }}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          onMouseMove={handleMouseMove}
+        >
+          {[1, 2, 3, 4, 5].map((num) => (
+            <div 
+              key={num} 
+              className="flex-shrink-0 w-[270px] h-[480px] snap-center mx-2 first:ml-0 last:mr-0"
+            >
+              <Image
+                src={`/images/carousel/shorts-${num}.svg`}
+                alt={`Viral Short Example ${num}`}
+                width={270}
+                height={480}
+                className="rounded-lg shadow-sm"
+              />
+            </div>
+          ))}
+        </div>
+        
+        <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+          {[1, 2, 3, 4, 5].map((num) => (
+            <button
+              key={num}
+              className="w-2 h-2 rounded-full bg-white bg-opacity-50 hover:bg-opacity-100 transition-opacity"
+              onClick={() => {
+                if (scrollRef.current) {
+                  const itemWidth = 270 + 16; // Width + margin
+                  scrollRef.current.scrollLeft = (num - 1) * itemWidth;
+                }
+              }}
             />
-          </div>
-        ))}
-      </div>
-      
-      <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
-        {[1, 2, 3, 4, 5].map((num) => (
-          <button
-            key={num}
-            className="w-2 h-2 rounded-full bg-white bg-opacity-50 hover:bg-opacity-100 transition-opacity"
-            onClick={() => {
-              if (scrollRef.current) {
-                const itemWidth = 270 + 16; // Width + margin
-                scrollRef.current.scrollLeft = (num - 1) * itemWidth;
-              }
-            }}
-          />
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
