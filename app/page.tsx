@@ -3,10 +3,7 @@
 import {
   Authenticated,
   Unauthenticated,
-  useMutation,
-  useQuery,
 } from "convex/react";
-import { api } from "../convex/_generated/api";
 import Link from "next/link";
 import { SignUpButton } from "@clerk/nextjs";
 import { SignInButton } from "@clerk/nextjs";
