@@ -1,20 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { useState } from "react";
 import Link from "next/link";
 
 export default function StudioPage() {
   const [activeTab, setActiveTab] = useState<"create" | "history">("create");
   
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Studio</h1>
       
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-        <div className="flex border-b border-slate-200 overflow-x-auto">
+        <div className="flex border-b border-slate-200">
           <button
             className={`px-4 py-3 text-sm font-medium ${
               activeTab === "create"
@@ -38,28 +35,18 @@ export default function StudioPage() {
         </div>
         
         <div className="p-6">
-          {activeTab === "create" ? (
-            <ShortGenerationForm setActiveTab={setActiveTab} />
-          ) : (
-            <ShortsHistoryTable />
-          )}
+          {activeTab === "create" ? <ShortGenerationForm setActiveTab={setActiveTab} /> : <ShortsHistoryTable />}
         </div>
       </div>
     </div>
   );
 }
 
-function ShortGenerationForm({ 
-  setActiveTab 
-}: { 
-  setActiveTab: (tab: "create" | "history") => void 
-}) {
+function ShortGenerationForm({ setActiveTab }: { setActiveTab: (tab: "create" | "history") => void }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [prompt, setPrompt] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const createShort = useMutation(api.shorts.createShort);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +59,11 @@ function ShortGenerationForm({
     setIsSubmitting(true);
     
     try {
-      await createShort({ title, description, prompt });
+      // In a real implementation, this would call the Convex mutation
+      // await createShort({ title, description, prompt });
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Reset form
       setTitle("");
@@ -154,172 +145,104 @@ function ShortGenerationForm({
 }
 
 function ShortsHistoryTable() {
-  const [sortBy, setSortBy] = useState<string>("createdAt");
-  const [sortOrder, setSortOrder] = useState<string>("desc");
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  // Mock data for the table
+  const mockShorts = [
+    {
+      _id: "1",
+      title: "Summer Fashion Trends 2023",
+      description: "Exploring the hottest fashion trends for summer 2023",
+      status: "completed",
+      createdAt: Date.now() - 1000000,
+      videoUrl: "https://example.com/videos/1",
+    },
+    {
+      _id: "2",
+      title: "5 Minute Workout Routine",
+      description: "Quick and effective workout routine for busy people",
+      status: "generating",
+      createdAt: Date.now() - 500000,
+      videoUrl: null,
+    },
+    {
+      _id: "3",
+      title: "Easy Vegan Recipes",
+      description: "Simple and delicious vegan recipes for beginners",
+      status: "failed",
+      createdAt: Date.now() - 200000,
+      videoUrl: null,
+    },
+  ];
   
-  const shorts = useQuery(api.shorts.listShorts, { 
-    limit: 50,
-    sortBy,
-    sortOrder,
-    filterStatus: filterStatus || undefined
-  }) || [];
-  
-  const handleSort = (field: string) => {
-    if (sortBy === field) {
-      // Toggle sort order if clicking the same field
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      // Set new sort field and default to descending
-      setSortBy(field);
-      setSortOrder("desc");
-    }
-  };
-  
-  if (shorts.length === 0) {
+  if (mockShorts.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-slate-600">
-          You haven't generated any shorts yet. Create your first short to see it here!
+          You haven&apos;t generated any shorts yet. Create your first short to see it here!
         </p>
       </div>
     );
   }
   
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap gap-2">
-        <div>
-          <label htmlFor="filterStatus" className="block text-sm font-medium text-slate-700 mb-1">
-            Filter by Status
-          </label>
-          <select
-            id="filterStatus"
-            value={filterStatus || ""}
-            onChange={(e) => setFilterStatus(e.target.value || null)}
-            className="px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">All Statuses</option>
-            <option value="generating">Generating</option>
-            <option value="completed">Completed</option>
-            <option value="failed">Failed</option>
-          </select>
-        </div>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
-            <tr>
-              <th 
-                scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort("title")}
-              >
-                <div className="flex items-center">
-                  Title
-                  {sortBy === "title" && (
-                    <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                  )}
-                </div>
-              </th>
-              <th 
-                scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort("status")}
-              >
-                <div className="flex items-center">
-                  Status
-                  {sortBy === "status" && (
-                    <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                  )}
-                </div>
-              </th>
-              <th 
-                scope="col" 
-                className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort("createdAt")}
-              >
-                <div className="flex items-center">
-                  Created
-                  {sortBy === "createdAt" && (
-                    <span className="ml-1">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                  )}
-                </div>
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Video
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Thumbnail
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-slate-200">
-            {shorts.map((short) => (
-              <tr key={short._id} className="hover:bg-slate-50">
-                <td className="px-6 py-4">
-                  <div className="text-sm font-medium text-slate-900">{short.title}</div>
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-slate-200">
+        <thead className="bg-slate-50">
+          <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Title
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Status
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Created
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              Video
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-slate-200">
+          {mockShorts.map((short) => (
+            <tr key={short._id} className="hover:bg-slate-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <Link href={`/dashboard/studio/${short._id}`} className="block">
+                  <div className="text-sm font-medium text-slate-900 hover:text-blue-600">{short.title}</div>
                   <div className="text-sm text-slate-500 truncate max-w-xs">{short.description}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    short.status === "completed"
-                      ? "bg-green-100 text-green-800"
-                      : short.status === "generating"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-red-100 text-red-800"
-                  }`}>
-                    {short.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                  {new Date(short.createdAt).toLocaleString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {short.videoUrl ? (
-                    <a
-                      href={short.videoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      View Video
-                    </a>
-                  ) : (
-                    <span className="text-slate-500">Not available</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {short.thumbnailUrl ? (
-                    <a
-                      href={short.thumbnailUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      View Thumbnail
-                    </a>
-                  ) : (
-                    <span className="text-slate-500">Not available</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <Link
-                    href={`/dashboard/studio/${short._id}`}
+                </Link>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  short.status === "completed"
+                    ? "bg-green-100 text-green-800"
+                    : short.status === "generating"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-red-100 text-red-800"
+                }`}>
+                  {short.status}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                {new Date(short.createdAt).toLocaleString()}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                {short.videoUrl ? (
+                  <a
+                    href={short.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-900"
                   >
-                    View Details
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    View Video
+                  </a>
+                ) : (
+                  <span className="text-slate-500">Not available</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
