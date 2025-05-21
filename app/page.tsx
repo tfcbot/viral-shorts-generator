@@ -21,7 +21,7 @@ export default function Home() {
       <main className="flex-1">
         <Authenticated>
           <div className="p-4 text-center">
-            <p className="text-lg mb-4">You're already logged in!</p>
+            <p className="text-lg mb-4">You&apos;re already logged in!</p>
             <Link 
               href="/dashboard" 
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
@@ -186,4 +186,3 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
     </div>
   );
 }
-

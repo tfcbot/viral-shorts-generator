@@ -56,7 +56,7 @@ export default function Dashboard() {
           <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
             <h2 className="text-xl font-semibold mb-4">Your Recent Shorts</h2>
             <div className="text-center py-12 text-slate-500">
-              <p>You haven't created any shorts yet.</p>
+              <p>You haven&apos;t created any shorts yet.</p>
               <p className="mt-2">Get started by creating your first short!</p>
             </div>
           </div>
@@ -69,4 +69,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
