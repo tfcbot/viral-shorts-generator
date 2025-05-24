@@ -84,6 +84,26 @@ export const generateVideo = action({
       return { success: false, error: "CFG scale must be between 0 and 2" };
     }
     
+    // Check if user has enough credits (1 credit per video)
+    const CREDITS_NEEDED = 1;
+    try {
+      const creditCheck = await ctx.runQuery(api.credits.checkCreditsAvailable, {
+        creditsNeeded: CREDITS_NEEDED,
+      });
+      
+      if (!creditCheck.hasEnoughCredits) {
+        return { 
+          success: false, 
+          error: `Insufficient credits. You need ${CREDITS_NEEDED} credit but have ${creditCheck.currentCredits}. Purchase more credits to continue.` 
+        };
+      }
+      
+      console.log(`[Credits] User has ${creditCheck.currentCredits} credits, proceeding with generation`);
+    } catch (error) {
+      console.error("[Credits] Error checking credits:", error);
+      return { success: false, error: "Failed to verify credit balance" };
+    }
+    
     try {
       // 1. Create a video record with "generating" status
       videoId = await ctx.runMutation(api.videos.createVideoRecord, {
@@ -178,11 +198,26 @@ export const generateVideo = action({
       const storageId = await ctx.storage.store(videoBlob);
       console.log(`[Video ${videoId}] Stored in Convex with ID: ${storageId}`);
       
-      // 8. Update the video record with completion data
+      // 8. Consume credits ONLY after successful generation and storage
+      try {
+        await ctx.runMutation(api.credits.consumeCredits, {
+          amount: CREDITS_NEEDED,
+          description: `Video generation: ${args.title}`,
+          relatedVideoId: videoId,
+        });
+        console.log(`[Video ${videoId}] Consumed ${CREDITS_NEEDED} credit for successful generation`);
+      } catch (creditError) {
+        console.error(`[Video ${videoId}] Failed to consume credits:`, creditError);
+        // Don't fail the video generation if credit consumption fails
+        // This prevents double-charging if there's a temporary error
+      }
+      
+      // 9. Update the video record with completion data
       await ctx.runMutation(api.videos.updateVideoWithStorage, {
         id: videoId,
         storageId,
         status: "completed",
+        creditsUsed: CREDITS_NEEDED, // Track credits used for this video
         metadata: {
           fileSize: videoBlob.size,
           model: "kling-v2-master",

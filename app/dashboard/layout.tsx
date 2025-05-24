@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 import Image from "next/image";
+import CreditDisplay from "@/components/CreditDisplay";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -13,6 +14,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { name: "Dashboard", path: "/dashboard", icon: "🏠", exact: true },
     { name: "Studio", path: "/dashboard/studio", icon: "🎬" },
     { name: "Videos", path: "/dashboard/videos", icon: "🎥" },
+    { name: "Billing", path: "/dashboard/billing", icon: "💳" },
   ];
 
   return (
@@ -23,6 +25,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-2 px-6 py-6 border-b border-slate-200 dark:border-slate-700">
           <Image src="/logo.svg" alt="Viral Shorts Generator" width={24} height={24} />
           <span className="font-bold text-lg text-slate-900 dark:text-white">Viral Shorts</span>
+        </div>
+        
+        {/* Credit Display */}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+          <CreditDisplay />
         </div>
         
         {/* Navigation */}
@@ -78,6 +85,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <MobileMenu navItems={navItems} currentPath={pathname} />
           <UserButton afterSignOutUrl="/" />
         </div>
+      </div>
+      
+      {/* Mobile Credit Display */}
+      <div className="md:hidden p-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <CreditDisplay />
       </div>
       
       {/* Main content */}

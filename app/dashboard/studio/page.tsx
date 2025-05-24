@@ -101,6 +101,10 @@ function AIGenerationWorkspace() {
     maxDaily: 20,
     timeUntilReset: 0,
   };
+  
+  // Check user credits
+  const userCredits = useQuery(api.credits.getUserCredits);
+  const creditCheck = useQuery(api.credits.checkCreditsAvailable, { creditsNeeded: 1 });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +116,12 @@ function AIGenerationWorkspace() {
     
     if (prompt.length > 1000) {
       toast.error("Prompt is too long. Maximum 1000 characters allowed.");
+      return;
+    }
+
+    // Check credits before generation
+    if (creditCheck && !creditCheck.hasEnoughCredits) {
+      toast.error(`Insufficient credits! You need 1 credit but have ${creditCheck.currentCredits}. Purchase more credits to continue.`);
       return;
     }
 
@@ -161,8 +171,49 @@ function AIGenerationWorkspace() {
     return `${hours}h ${minutes}m`;
   };
 
+  const hasEnoughCredits = creditCheck?.hasEnoughCredits ?? true;
+
   return (
     <div className="space-y-8">
+      {/* Credit Status */}
+      {userCredits && (
+        <div className={`border rounded-lg p-4 ${
+          hasEnoughCredits 
+            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-500' 
+            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-500'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className={`font-medium ${
+                hasEnoughCredits 
+                  ? 'text-green-900 dark:text-green-300' 
+                  : 'text-red-900 dark:text-red-300'
+              }`}>
+                Credit Status
+              </h3>
+              <p className={`text-sm ${
+                hasEnoughCredits 
+                  ? 'text-green-700 dark:text-green-400' 
+                  : 'text-red-700 dark:text-red-400'
+              }`}>
+                {hasEnoughCredits 
+                  ? `You have ${userCredits.credits} credits available. Each video costs 1 credit.`
+                  : `Insufficient credits! You have ${userCredits.credits} credits but need 1 to generate a video.`
+                }
+              </p>
+            </div>
+            {!hasEnoughCredits && (
+              <Link
+                href="/pricing"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Buy Credits
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Rate Limit Info */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500 rounded-lg p-4">
         <div className="flex items-center justify-between">

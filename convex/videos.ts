@@ -117,6 +117,7 @@ export const updateVideoWithStorage = mutation({
     id: v.id("videos"),
     storageId: v.id("_storage"),
     status: v.union(v.literal("generating"), v.literal("completed"), v.literal("failed")),
+    creditsUsed: v.optional(v.number()),
     metadata: v.optional(v.object({
       fileSize: v.optional(v.number()),
       duration: v.optional(v.number()),
@@ -132,12 +133,18 @@ export const updateVideoWithStorage = mutation({
       throw new Error("Video not found");
     }
     
-    await ctx.db.patch(args.id, {
+    const updateData: any = {
       storageId: args.storageId,
       status: args.status,
       completedAt: Date.now(),
       metadata: args.metadata,
-    });
+    };
+    
+    if (args.creditsUsed !== undefined) {
+      updateData.creditsUsed = args.creditsUsed;
+    }
+    
+    await ctx.db.patch(args.id, updateData);
     
     return args.id;
   },

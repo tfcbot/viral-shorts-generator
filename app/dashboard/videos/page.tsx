@@ -60,11 +60,11 @@ export default function VideosPage() {
 
   // Filter and sort videos
   const filteredVideos = videos
-    .filter(video => 
+    .filter((video: Video) => 
       video.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       video.prompt.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort((a, b) => {
+    .sort((a: Video, b: Video) => {
       switch (sortBy) {
         case "newest":
           return b.createdAt - a.createdAt;
@@ -73,7 +73,7 @@ export default function VideosPage() {
         case "name":
           return a.title.localeCompare(b.title);
         case "status":
-          const statusOrder = { "generating": 0, "completed": 1, "failed": 2 };
+          const statusOrder: Record<VideoStatus, number> = { "generating": 0, "completed": 1, "failed": 2 };
           return statusOrder[a.status] - statusOrder[b.status];
         default:
           return b.createdAt - a.createdAt;
@@ -227,7 +227,7 @@ export default function VideosPage() {
           <VideosTable videos={filteredVideos} onViewVideo={setSelectedVideo} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVideos.map((video) => (
+            {filteredVideos.map((video: Video) => (
               <VideoCard 
                 key={video._id} 
                 video={video} 
