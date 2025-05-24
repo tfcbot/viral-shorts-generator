@@ -1,19 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import VideoPlayer from "@/components/VideoPlayer";
+import { Id } from "@/convex/_generated/dataModel";
 
 type VideoStatus = "generating" | "completed" | "failed";
 type SortOption = "newest" | "oldest" | "name" | "status";
+
+type Video = {
+  _id: Id<"videos">;
+  title: string;
+  prompt: string;
+  status: VideoStatus;
+  createdAt: number;
+  completedAt?: number;
+  url?: string;
+  metadata?: {
+    duration?: number;
+    aspectRatio?: string;
+    fileSize?: number;
+    model?: string;
+  };
+  error?: string;
+};
 
 export default function VideosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<VideoStatus | "all">("all");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [selectedVideo, setSelectedVideo] = useState<any>(null);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
   // Fetch videos from Convex
@@ -237,7 +255,7 @@ export default function VideosPage() {
   );
 }
 
-function VideosTable({ videos, onViewVideo }: { videos: any[]; onViewVideo: (video: any) => void }) {
+function VideosTable({ videos, onViewVideo }: { videos: Video[]; onViewVideo: (video: Video) => void }) {
   const getStatusBadge = (status: VideoStatus) => {
     switch (status) {
       case "completed":
@@ -393,22 +411,7 @@ function VideoCard({
   video,
   onViewVideo
 }: { 
-  video: {
-    _id: string;
-    title: string;
-    prompt: string;
-    status: VideoStatus;
-    createdAt: number;
-    completedAt?: number;
-    url?: string;
-    metadata?: {
-      duration?: number;
-      aspectRatio?: string;
-      fileSize?: number;
-      model?: string;
-    };
-    error?: string;
-  };
+  video: Video;
   onViewVideo: () => void;
 }) {
   const [showHoverControls, setShowHoverControls] = useState(false);
@@ -588,7 +591,7 @@ function VideoCard({
   );
 }
 
-function VideoDetailModal({ video, onClose }: { video: any; onClose: () => void }) {
+function VideoDetailModal({ video, onClose }: { video: Video; onClose: () => void }) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [useRefreshQuery, setUseRefreshQuery] = useState(false);
   

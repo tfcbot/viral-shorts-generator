@@ -211,7 +211,7 @@ function AIGenerationWorkspace() {
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., 'Amazing Space Facts' or 'Productivity Life Hacks'"
+                placeholder="e.g., &apos;Amazing Space Facts&apos; or &apos;Productivity Life Hacks&apos;"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
                 required
               />
@@ -300,11 +300,11 @@ function AIGenerationWorkspace() {
                       id="negativePrompt"
                       value={negativePrompt}
                       onChange={(e) => setNegativePrompt(e.target.value)}
-                      placeholder="Things to avoid (e.g., 'blur, distort, low quality, text, watermark')"
+                      placeholder="Things to avoid (e.g., &apos;blur, distort, low quality, text, watermark&apos;)"
                       className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
                     />
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Specify what you don't want in the video to improve quality
+                      Specify what you don&apos;t want in the video to improve quality
                     </p>
                   </div>
 
@@ -376,7 +376,7 @@ function AIGenerationWorkspace() {
             <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
-                <span>Include specific camera movements: "drone shot", "close-up", "tracking shot"</span>
+                <span>Include specific camera movements: &quot;drone shot&quot;, &quot;close-up&quot;, &quot;tracking shot&quot;</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
@@ -384,7 +384,7 @@ function AIGenerationWorkspace() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
-                <span>Set the scene with lighting and atmosphere: "golden hour", "neon lights"</span>
+                <span>Set the scene with lighting and atmosphere: &quot;golden hour&quot;, &quot;neon lights&quot;</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
@@ -417,7 +417,7 @@ function TemplateWorkspace() {
         Pre-made viral templates will be available here
       </p>
       <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 max-w-md mx-auto">
-        <h4 className="font-medium text-slate-900 dark:text-white mb-2">What's Coming:</h4>
+        <h4 className="font-medium text-slate-900 dark:text-white mb-2">What&apos;s Coming:</h4>
         <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1 text-left">
           <li>• Educational fact templates</li>
           <li>• Motivational quote formats</li>
@@ -438,92 +438,13 @@ function UploadWorkspace() {
         Upload your content and transform it into viral shorts
       </p>
       <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 max-w-md mx-auto">
-        <h4 className="font-medium text-slate-900 dark:text-white mb-2">What's Coming:</h4>
+        <h4 className="font-medium text-slate-900 dark:text-white mb-2">What&apos;s Coming:</h4>
         <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1 text-left">
           <li>• Video to shorts conversion</li>
           <li>• Audio podcast highlights</li>
           <li>• Blog post to video</li>
           <li>• Social media repurposing</li>
         </ul>
-      </div>
-    </div>
-  );
-}
-
-function FeatureItem({
-  icon,
-  title,
-  description,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="text-xl">{icon}</span>
-      <div>
-        <h4 className="font-semibold text-slate-900 dark:text-white">{title}</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-300">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function TemplateCard({
-  template,
-}: {
-  template: {
-    id: number;
-    title: string;
-    description: string;
-    category: string;
-    thumbnail: string;
-    uses: number;
-  };
-}) {
-  return (
-    <div className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer">
-      <div className="flex items-start gap-4">
-        <div className="text-4xl">{template.thumbnail}</div>
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="font-semibold text-slate-900 dark:text-white">{template.title}</h3>
-            <span className="text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
-              {template.category}
-            </span>
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">{template.description}</p>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {template.uses.toLocaleString()} uses
-            </span>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg font-medium transition-colors shadow-sm hover:shadow">
-              Use Template
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TransformOption({
-  icon,
-  title,
-  description,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-white dark:bg-slate-800">
-      <input type="checkbox" className="rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700" />
-      <span className="text-xl">{icon}</span>
-      <div className="flex-1">
-        <h4 className="font-medium text-slate-900 dark:text-white">{title}</h4>
-        <p className="text-sm text-slate-600 dark:text-slate-300">{description}</p>
       </div>
     </div>
   );
