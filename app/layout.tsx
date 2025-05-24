@@ -15,10 +15,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Viral Shorts Generator",
-  description: "Generate viral YouTube shorts with AI",
+  title: "Viral Shorts Generator - Create YouTube Shorts Without Showing Your Face",
+  description: "Generate viral YouTube shorts that drive views, subscribers, and revenue - all without ever appearing on camera.",
   icons: {
-    icon: "/convex.svg",
+    icon: "/logo.svg",
   },
 };
 

@@ -1,0 +1,6 @@
+{
+  "snapshot": "snapshot-20250522-3b3a789a-7d0a-4d2d-af42-2cabf672f3c6",
+  "install": "bun install",
+  "terminals": [],
+  "start": "bun dev"
+}
