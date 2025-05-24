@@ -86,7 +86,7 @@ export const grantMonthlyCredits = mutation({
   },
 });
 
-// Check if user has access to the dashboard (active subscription OR credits > 0)
+// Check if user has access to the dashboard (active subscription OR credits)
 export const checkDashboardAccess = query({
   args: {},
   handler: async (ctx) => {
@@ -101,20 +101,33 @@ export const checkDashboardAccess = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
 
+    // If no user record exists, return default values for new users
     if (!userCredits) {
-      return { hasAccess: false, reason: "no_user_record" };
+      return {
+        hasAccess: false, // New users need to subscribe or get credits
+        isActiveSubscriber: false,
+        hasCredits: false,
+        credits: 0,
+        planName: "No Plan",
+        reason: "new_user_no_credits"
+      };
     }
 
     const isActiveSubscriber = userCredits.subscriptionStatus === "active";
     const hasCredits = (userCredits.credits || 0) > 0;
     
+    // Allow access if user has active subscription OR has credits
+    const hasAccess = isActiveSubscriber || hasCredits;
+    
     return {
-      hasAccess: isActiveSubscriber || hasCredits,
+      hasAccess,
       isActiveSubscriber,
       hasCredits,
       credits: userCredits.credits || 0,
-      planName: userCredits.planName || "Free Trial",
-      reason: isActiveSubscriber ? "active_subscription" : hasCredits ? "has_credits" : "no_access"
+      planName: userCredits.planName || "No Plan",
+      reason: hasAccess 
+        ? (isActiveSubscriber ? "active_subscription" : "has_credits") 
+        : "no_subscription_or_credits"
     };
   },
 });
@@ -137,7 +150,7 @@ export const cancelSubscription = mutation({
     if (userCredits) {
       await ctx.db.patch(userCredits._id, {
         planId: undefined,
-        planName: "Free Trial",
+        planName: "No Plan",
         subscriptionStatus: "cancelled",
         lastUpdated: Date.now(),
       });
@@ -145,7 +158,7 @@ export const cancelSubscription = mutation({
 
     return { 
       success: true, 
-      message: "Subscription cancelled. Your remaining credits are still available for use." 
+      message: "Subscription cancelled. You will lose access to the dashboard." 
     };
   },
 }); 
