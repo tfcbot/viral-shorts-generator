@@ -38,7 +38,7 @@ export default function Home() {
       </main>
       
       <footer className="bg-slate-100 dark:bg-slate-800 p-6 text-center text-sm text-slate-600 dark:text-slate-400">
-        <p>© {new Date().getFullYear()} Viral Shorts Generator. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Viral Shorts Generator. All rights reserved.</p>
       </footer>
     </div>
   );
@@ -297,3 +297,4 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
     </div>
   );
 }
+
