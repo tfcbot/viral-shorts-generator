@@ -6,16 +6,63 @@ import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
 import Image from "next/image";
 import CreditDisplay from "@/components/CreditDisplay";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const dashboardAccess = useQuery(api.billing.checkDashboardAccess);
   
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: "🏠", exact: true },
     { name: "Studio", path: "/dashboard/studio", icon: "🎬" },
     { name: "Videos", path: "/dashboard/videos", icon: "🎥" },
-    { name: "Billing", path: "/dashboard/billing", icon: "💳" },
   ];
+
+  // Show loading state while checking access
+  if (dashboardAccess === undefined) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Checking access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Block access if user doesn't have subscription or credits
+  if (!dashboardAccess.hasAccess) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8 text-center">
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">🚀</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+            Subscription Required
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">
+            You need an active Pro subscription to access the dashboard and create viral videos.
+          </p>
+          <div className="space-y-3">
+            <Link
+              href="/pricing"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors block"
+            >
+              View Pricing Plans
+            </Link>
+            <Link
+              href="/"
+              className="w-full bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white py-3 px-4 rounded-lg font-medium transition-colors block"
+            >
+              Back to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-900">
@@ -25,6 +72,31 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-2 px-6 py-6 border-b border-slate-200 dark:border-slate-700">
           <Image src="/logo.svg" alt="Viral Shorts Generator" width={24} height={24} />
           <span className="font-bold text-lg text-slate-900 dark:text-white">Viral Shorts</span>
+        </div>
+        
+        {/* Subscription Status */}
+        <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+          <div className={`rounded-lg p-3 ${
+            dashboardAccess.isActiveSubscriber 
+              ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500' 
+              : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500'
+          }`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                {dashboardAccess.planName}
+              </span>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                dashboardAccess.isActiveSubscriber
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
+                  : 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
+              }`}>
+                {dashboardAccess.isActiveSubscriber ? '✅ Active' : '⏳ Credits Only'}
+              </span>
+            </div>
+            <p className="text-xs text-green-700 dark:text-green-400">
+              +30 credits monthly on the 1st
+            </p>
+          </div>
         </div>
         
         {/* Credit Display */}
@@ -56,6 +128,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
         
+
+        
         {/* User section */}
         <div className="p-4 border-t border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3 px-3 py-2">
@@ -69,7 +143,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 dark:text-white truncate">Account</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Manage settings</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Settings & billing</p>
             </div>
           </div>
         </div>
@@ -87,8 +161,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
       
-      {/* Mobile Credit Display */}
+      {/* Mobile Subscription Status */}
       <div className="md:hidden p-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <div className="rounded-lg p-3 mb-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium text-slate-900 dark:text-white">
+                {dashboardAccess.planName}
+              </span>
+                              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                  ✅ Active
+                </span>
+            </div>
+            
+          </div>
+        </div>
         <CreditDisplay />
       </div>
       

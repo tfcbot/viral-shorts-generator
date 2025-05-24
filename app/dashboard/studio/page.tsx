@@ -201,13 +201,18 @@ function AIGenerationWorkspace() {
                   : `Insufficient credits! You have ${userCredits.credits} credits but need 1 to generate a video.`
                 }
               </p>
+              {hasEnoughCredits && userCredits.subscriptionStatus === 'active' && (
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  Pro subscriber: +30 credits monthly on the 1st
+                </p>
+              )}
             </div>
             {!hasEnoughCredits && (
               <Link
                 href="/pricing"
                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
-                Buy Credits
+                Subscribe Now
               </Link>
             )}
           </div>

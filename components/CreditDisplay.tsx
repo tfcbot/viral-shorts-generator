@@ -2,16 +2,15 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import Link from "next/link";
 import { useEffect } from "react";
 
 export default function CreditDisplay() {
   const userCredits = useQuery(api.credits.getUserCredits);
   const initializeCredits = useMutation(api.credits.initializeUserCredits);
 
-  // Initialize credits for new users
+  // Only initialize user record if they don't exist (without granting credits)
   useEffect(() => {
-    if (userCredits && userCredits.credits === 0 && !userCredits._id) {
+    if (userCredits && !userCredits._id) {
       initializeCredits();
     }
   }, [userCredits, initializeCredits]);
@@ -38,7 +37,7 @@ export default function CreditDisplay() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-white/80 text-sm font-medium">
-            {userCredits.planName || 'Free Trial'}
+            {userCredits.planName || 'No Plan'}
           </p>
           <div className="flex items-center gap-2">
             <p className="text-white text-xl font-bold">
@@ -58,19 +57,10 @@ export default function CreditDisplay() {
           )}
         </div>
         
-        <div className="flex flex-col gap-2">
-          <Link 
-            href="/pricing"
-            className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors"
-          >
-            {userCredits.credits === 0 ? 'Buy Credits' : 'Add Credits'}
-          </Link>
-          
-          {userCredits.planId && (
-            <button className="bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-lg text-xs transition-colors">
-              Manage Plan
-            </button>
-          )}
+        <div className="flex items-center justify-center">
+          <span className="text-white/70 text-xs">
+            Manage billing in Account
+          </span>
         </div>
       </div>
 

@@ -1,11 +1,14 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
-// Define plan configurations (credits per plan)
+// Define plan configurations
 const PLAN_CONFIGS = {
-  "starter": { credits: 10, name: "Starter Plan" },
-  "pro": { credits: 25, name: "Pro Plan" },
-  "unlimited": { credits: 100, name: "Unlimited Plan" },
+  "pro": { 
+    credits: 30, 
+    name: "Pro Plan",
+    monthlyPrice: 100,
+    description: "30 credits per month + rollover"
+  },
 } as const;
 
 type PlanId = keyof typeof PLAN_CONFIGS;
@@ -18,8 +21,8 @@ export const getAvailablePlans = query({
       id,
       name: config.name,
       credits: config.credits,
-      pricePerCredit: 1, // $1 per credit
-      totalPrice: config.credits, // Total price in dollars
+      monthlyPrice: config.monthlyPrice,
+      description: config.description,
     }));
   },
 });
@@ -36,6 +39,86 @@ export const getPlanConfig = query({
   },
 });
 
+// Grant monthly credits to all active subscribers (run on 1st of each month)
+export const grantMonthlyCredits = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const allActiveSubscribers = await ctx.db
+      .query("userCredits")
+      .filter((q) => q.eq(q.field("subscriptionStatus"), "active"))
+      .collect();
+    
+    let grantedCount = 0;
+    const maxCredits = 200; // Cap at ~6-7 months of credits to prevent infinite accumulation
+    
+    for (const user of allActiveSubscribers) {
+      const currentCredits = user.credits || 0;
+      const creditsToGrant = 30;
+      const newBalance = Math.min(currentCredits + creditsToGrant, maxCredits);
+      const actualGranted = newBalance - currentCredits;
+      
+      if (actualGranted > 0) {
+        await ctx.db.patch(user._id, {
+          credits: newBalance,
+          totalCreditsEver: (user.totalCreditsEver || 0) + actualGranted,
+          lastUpdated: Date.now(),
+        });
+        
+        // Record transaction
+        await ctx.db.insert("creditTransactions", {
+          userId: user.userId,
+          type: "bonus",
+          amount: actualGranted,
+          description: `Monthly subscription credits${actualGranted < creditsToGrant ? ' (capped at 200)' : ''}`,
+          balanceAfter: newBalance,
+          createdAt: Date.now(),
+        });
+        
+        grantedCount++;
+      }
+    }
+    
+    return { 
+      success: true, 
+      grantedToUsers: grantedCount,
+      message: `Monthly credits granted to ${grantedCount} active subscribers` 
+    };
+  },
+});
+
+// Check if user has access to the dashboard (active subscription OR credits > 0)
+export const checkDashboardAccess = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { hasAccess: false, reason: "not_authenticated" };
+    }
+
+    const userId = identity.subject;
+    const userCredits = await ctx.db
+      .query("userCredits")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!userCredits) {
+      return { hasAccess: false, reason: "no_user_record" };
+    }
+
+    const isActiveSubscriber = userCredits.subscriptionStatus === "active";
+    const hasCredits = (userCredits.credits || 0) > 0;
+    
+    return {
+      hasAccess: isActiveSubscriber || hasCredits,
+      isActiveSubscriber,
+      hasCredits,
+      credits: userCredits.credits || 0,
+      planName: userCredits.planName || "Free Trial",
+      reason: isActiveSubscriber ? "active_subscription" : hasCredits ? "has_credits" : "no_access"
+    };
+  },
+});
+
 // Cancel subscription (removes plan but keeps credits)
 export const cancelSubscription = mutation({
   args: {},
@@ -45,7 +128,6 @@ export const cancelSubscription = mutation({
       throw new Error("Not authenticated");
     }
 
-    // We'll implement this by directly updating the database instead of calling other mutations
     const userId = identity.subject;
     const userCredits = await ctx.db
       .query("userCredits")
@@ -61,6 +143,9 @@ export const cancelSubscription = mutation({
       });
     }
 
-    return { success: true, message: "Subscription cancelled. Your remaining credits are still available." };
+    return { 
+      success: true, 
+      message: "Subscription cancelled. Your remaining credits are still available for use." 
+    };
   },
 }); 

@@ -23,7 +23,7 @@ export const getUserCredits = query({
         credits: 0,
         totalCreditsEver: 0,
         planId: undefined,
-        planName: "Free Trial",
+        planName: "No Plan",
         subscriptionStatus: undefined,
         lastUpdated: Date.now(),
         createdAt: Date.now(),
@@ -55,13 +55,13 @@ export const initializeUserCredits = mutation({
       return existingCredits;
     }
 
-    // Create initial credit record for new user with 3 free credits
+    // Create initial credit record for new user with 0 credits - no free trial
     const newCredits = {
       userId,
-      credits: 3,
-      totalCreditsEver: 3,
+      credits: 0,
+      totalCreditsEver: 0,
       planId: undefined,
-      planName: "Free Trial",
+      planName: "No Plan",
       subscriptionStatus: undefined,
       lastUpdated: Date.now(),
       createdAt: Date.now(),
@@ -69,15 +69,7 @@ export const initializeUserCredits = mutation({
     
     const creditId = await ctx.db.insert("userCredits", newCredits);
     
-    // Record the bonus transaction
-    await ctx.db.insert("creditTransactions", {
-      userId,
-      type: "bonus",
-      amount: 3,
-      description: "Welcome bonus - 3 free credits",
-      balanceAfter: 3,
-      createdAt: Date.now(),
-    });
+    // No bonus transaction for new users - they must subscribe to get credits
 
     return { ...newCredits, _id: creditId };
   },
@@ -185,7 +177,7 @@ export const addCredits = mutation({
         credits: 0,
         totalCreditsEver: 0,
         planId: undefined,
-        planName: "Free Trial",
+        planName: "No Plan",
         subscriptionStatus: undefined,
         lastUpdated: Date.now(),
         createdAt: Date.now(),
@@ -247,10 +239,10 @@ export const updateUserPlan = mutation({
       // Create new credit record if it doesn't exist
       const newCredits = {
         userId,
-        credits: 3, // Free trial credits
-        totalCreditsEver: 3,
+        credits: 0, // Free trial credits
+        totalCreditsEver: 0,
         planId,
-        planName: planName || "Free Trial",
+        planName: planName || "No Plan",
         subscriptionStatus,
         lastUpdated: Date.now(),
         createdAt: Date.now(),
