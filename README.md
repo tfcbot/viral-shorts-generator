@@ -11,8 +11,7 @@ A Next.js application for creating viral YouTube shorts using AI video generatio
 - Tailwind CSS
 
 ## 🚀 Deploy to Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator&env=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,CLERK_JWT_ISSUER_DOMAIN,FAL_KEY&envDescription=API%20keys%20needed%20for%20authentication%20and%20AI%20video%20generation&envLink=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator%23setup-instructions)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator&env=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,CONVEX_DEPLOY_KEY&envDescription=API%20keys%20needed%20for%20authentication%20and%20AI%20video%20generation&envLink=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator%23setup-instructions)
 
 ## Setup Instructions
 
