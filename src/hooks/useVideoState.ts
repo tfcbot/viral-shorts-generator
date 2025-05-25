@@ -44,11 +44,13 @@ export interface VideoStats {
 
 export interface RateLimit {
   canCreateVideo: boolean;
+  hasVideoGenerationAccess: boolean;
   generatingCount: number;
   maxGenerating: number;
   dailyCount: number;
   maxDaily: number;
   timeUntilReset: number;
+  planInfo?: any;
   recentVideos?: Array<{
     id: Id<"videos">;
     status: VideoStatus;

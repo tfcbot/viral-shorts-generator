@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import toast, { Toaster } from "react-hot-toast";
+import { Protect } from "@clerk/nextjs";
 
 export default function StudioPage() {
   return (
@@ -32,7 +33,12 @@ export default function StudioPage() {
 
       {/* Main Content */}
       <div className="mt-6">
-        <AIGenerationWorkspace />
+        <Protect
+          plan="pro"
+          fallback={<PlanUpgradePrompt />}
+        >
+          <AIGenerationWorkspace />
+        </Protect>
       </div>
     </div>
   );
@@ -47,11 +53,13 @@ function AIGenerationWorkspace() {
   const generateVideo = useAction(api.videoActions.generateVideo);
   const rateLimit = useQuery(api.videos.checkRateLimit) || {
     canCreateVideo: true,
+    hasVideoGenerationAccess: true,
     generatingCount: 0,
     maxGenerating: 5,
     dailyCount: 0,
     maxDaily: 20,
     timeUntilReset: 0,
+    planInfo: null,
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,6 +72,11 @@ function AIGenerationWorkspace() {
     
     if (prompt.length > 1000) {
       toast.error("Prompt is too long. Maximum 1000 characters allowed.");
+      return;
+    }
+
+    if (!rateLimit.hasVideoGenerationAccess) {
+      toast.error("Video generation requires an active Pro subscription. Please upgrade to continue.");
       return;
     }
 
@@ -348,6 +361,65 @@ function PresetCard({
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{description}</p>
       <p className="text-xs text-slate-500 dark:text-slate-500 italic">"{example}"</p>
     </button>
+  );
+}
+
+function PlanUpgradePrompt() {
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-500 rounded-xl p-8 text-center">
+        <div className="mb-6">
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            Unlock Video Generation
+          </h2>
+          <p className="text-slate-600 dark:text-slate-300 text-lg">
+            Upgrade to Pro to start creating viral YouTube shorts with AI
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="text-2xl mb-2">🎬</div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">AI Video Generation</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Create viral shorts with advanced AI technology</p>
+          </div>
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="text-2xl mb-2">⚡</div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Fast Processing</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Generate videos in minutes, not hours</p>
+          </div>
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="text-2xl mb-2">📈</div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Viral Optimization</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Content optimized for YouTube's algorithm</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            href="/pricing"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-sm hover:shadow"
+          >
+            View Plans & Pricing
+          </Link>
+          <Link
+            href="/dashboard/videos"
+            className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-8 py-3 rounded-lg font-semibold transition-colors"
+          >
+            View Existing Videos
+          </Link>
+        </div>
+
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-6">
+          Already subscribed? It may take a few minutes for your plan to activate.
+        </p>
+      </div>
+    </div>
   );
 }
 

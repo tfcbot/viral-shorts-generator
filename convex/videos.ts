@@ -1,13 +1,29 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
-// Query to check user rate limit (max 5 generating videos at once, max 20 per day)
+// Query to check user rate limit and plan access
 export const checkRateLimit = query({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error("Unauthorized");
+    }
+    
+    // Check if user has the pro plan for video generation
+    let hasVideoGenerationAccess = false;
+    let planInfo = null;
+    
+    try {
+      // TODO: Implement proper plan checking once Clerk billing is configured
+      // For now, allow access for development
+      hasVideoGenerationAccess = true;
+      
+      // The frontend will handle plan checking using Clerk's Protect component
+    } catch (error) {
+      // If billing is not set up, fall back to allowing access for now
+      console.warn("Billing check failed, allowing access:", error);
+      hasVideoGenerationAccess = true;
     }
     
     const userId = identity.subject;
@@ -28,15 +44,19 @@ export const checkRateLimit = query({
       // Count total videos created today
       const dailyCount = recentVideos.length;
       
-      const canCreateVideo = generatingCount < 5 && dailyCount < 20;
+      // Check both rate limits and plan access
+      const hasRateLimit = generatingCount < 5 && dailyCount < 20;
+      const canCreateVideo = hasVideoGenerationAccess && hasRateLimit;
       
       return {
         canCreateVideo,
+        hasVideoGenerationAccess,
         generatingCount,
         maxGenerating: 5,
         dailyCount,
         maxDaily: 20,
         timeUntilReset: oneDayAgo + (24 * 60 * 60 * 1000) - now,
+        planInfo,
         recentVideos: recentVideos.map(v => ({
           id: v._id,
           status: v.status,
@@ -48,11 +68,13 @@ export const checkRateLimit = query({
       // Return safe defaults on error
       return {
         canCreateVideo: false,
+        hasVideoGenerationAccess: false,
         generatingCount: 0,
         maxGenerating: 5,
         dailyCount: 0,
         maxDaily: 20,
         timeUntilReset: 24 * 60 * 60 * 1000,
+        planInfo: null,
         recentVideos: [],
         error: "Failed to check rate limit",
       };
