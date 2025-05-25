@@ -24,10 +24,13 @@ describe('Broken Functionality Detection', () => {
       const promptTextarea = screen.getByLabelText(/video prompt/i)
       await user.type(promptTextarea, 'A beautiful landscape with mountains')
       
-      const generateButton = screen.getByRole('button', { name: /generate video/i })
+      // Wait for form validation to update
+      await waitFor(() => {
+        const generateButton = screen.getByRole('button', { name: /generate video/i })
+        expect(generateButton).not.toBeDisabled()
+      })
       
-      // Check if button is clickable
-      expect(generateButton).not.toBeDisabled()
+      const generateButton = screen.getByRole('button', { name: /generate video/i })
       
       // Simulate click
       await user.click(generateButton)
@@ -59,11 +62,24 @@ describe('Broken Functionality Detection', () => {
       
       const generateButton = screen.getByRole('button', { name: /generate video/i })
       
+      // Button should be disabled initially (empty form)
+      expect(generateButton).toBeDisabled()
+      
       // Try to submit empty form
       await user.click(generateButton)
       
       // Should not call the action with empty form
       expect(mockGenerateVideo).not.toHaveBeenCalled()
+      
+      // Add valid prompt
+      const promptTextarea = screen.getByLabelText(/video prompt/i)
+      await user.type(promptTextarea, 'A beautiful landscape with mountains')
+      
+      // Wait for form validation to update
+      await waitFor(() => {
+        const updatedButton = screen.getByRole('button', { name: /generate video/i })
+        expect(updatedButton).not.toBeDisabled()
+      })
     })
 
     it('should detect if character count updates', async () => {
@@ -197,6 +213,9 @@ describe('Broken Functionality Detection', () => {
         if (queryName.includes('listUserVideos')) {
           return createVideoList(4) // More videos
         }
+        if (queryName.includes('getVideoStats')) {
+          return { total: 4, completed: 3, generating: 1, failed: 0 }
+        }
         return mockRateLimit
       })
       
@@ -234,4 +253,3 @@ describe('Broken Functionality Detection', () => {
     })
   })
 })
-

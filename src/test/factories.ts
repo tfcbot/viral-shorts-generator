@@ -57,6 +57,51 @@ export const mockFailedVideo = {
   error: 'Generation failed due to content policy violation',
 }
 
+// Enhanced video objects for advanced testing
+export const mockEnhancedVideo = {
+  ...mockVideo,
+  _id: 'video-enhanced-123',
+  title: 'Enhanced Video with State',
+  urlState: {
+    lastGenerated: Date.now() - 1000 * 60 * 60, // 1 hour ago
+    expiresAt: Date.now() + 1000 * 60 * 60 * 23, // 23 hours from now
+    needsRefresh: false,
+  },
+  errorHistory: [],
+  retryCount: 0,
+}
+
+export const mockVideoWithError = {
+  ...mockFailedVideo,
+  _id: 'video-with-error-456',
+  title: 'Video with Error History',
+  errorHistory: [
+    {
+      timestamp: Date.now() - 1000 * 60 * 30, // 30 minutes ago
+      error: 'Network timeout',
+      retryable: true,
+    },
+    {
+      timestamp: Date.now() - 1000 * 60 * 15, // 15 minutes ago
+      error: 'Content policy violation',
+      retryable: false,
+    },
+  ],
+  retryCount: 2,
+}
+
+export const mockVideoWithExpiredUrl = {
+  ...mockVideo,
+  _id: 'video-expired-url-789',
+  title: 'Video with Expired URL',
+  urlState: {
+    lastGenerated: Date.now() - 1000 * 60 * 60 * 25, // 25 hours ago
+    expiresAt: Date.now() - 1000 * 60 * 60, // 1 hour ago (expired)
+    needsRefresh: true,
+  },
+  url: 'https://expired-url.example.com/video.mp4',
+}
+
 export const mockVideoStats = {
   total: 15,
   completed: 12,
@@ -150,4 +195,3 @@ export const createVideoList = (count: number = 5) => {
   }
   return videos
 }
-

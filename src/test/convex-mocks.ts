@@ -75,14 +75,14 @@ export const createConvexMocks = () => {
     }),
     'videos.updateVideoError': vi.fn().mockImplementation((args) => {
       const video = mockDatabase.enhancedVideos.find(v => v._id === args.id)
-      if (video) {
+      if (video && 'errorHistory' in video) {
         Object.assign(video, args)
       }
       return args.id
     }),
     'videos.ensureFreshVideoUrl': vi.fn().mockImplementation((args) => {
       const video = mockDatabase.enhancedVideos.find(v => v._id === args.id)
-      if (video) {
+      if (video && 'urlState' in video) {
         video.urlState = {
           lastGenerated: Date.now(),
           expiresAt: Date.now() + 24 * 60 * 60 * 1000,
