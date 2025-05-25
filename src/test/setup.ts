@@ -34,6 +34,7 @@ vi.mock('@/convex/_generated/api', () => ({
       getUserSession: 'getUserSession',
       retryVideoGeneration: 'retryVideoGeneration',
       updateUserPreferences: 'updateUserPreferences',
+      updateUserActivity: 'updateUserActivity',
       cleanupExpiredUrls: 'cleanupExpiredUrls',
       // Core mutations
       createVideoRecord: 'createVideoRecord',
@@ -104,4 +105,3 @@ export { mockUseQuery, mockUseMutation, mockUseAction }
 beforeEach(() => {
   vi.clearAllMocks()
 })
-

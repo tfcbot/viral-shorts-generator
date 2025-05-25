@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import toast from "react-hot-toast";
 
 export type VideoStatus = "generating" | "completed" | "failed";
@@ -88,7 +88,9 @@ export function useVideoState(options: {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Core queries
-  const videos = useQuery(api.videos.listUserVideos, { limit: 50 }) || [];
+  const videosRaw = useQuery(api.videos.listUserVideos, { limit: 50 });
+  const videos = useMemo(() => videosRaw || [], [videosRaw]);
+  
   const stats = useQuery(api.videos.getVideoStats) || {
     total: 0,
     generating: 0,
@@ -211,11 +213,11 @@ export function useVideoState(options: {
   // Update user preferences
   const updatePreferences = useCallback(async (preferences: Partial<UserSession["preferences"]>) => {
     try {
-      await updateUserPreferences({ preferences });
+      await updateUserPreferences({ preferences: preferences || {} });
       toast.success("Preferences updated", { icon: "⚙️" });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      toast.error(`Failed to update preferences: ${message}`);
+      toast.error(`Failed to update preferences: ${message}`, { icon: "❌" });
     }
   }, [updateUserPreferences]);
 
@@ -304,4 +306,3 @@ export function useVideoDetails(videoId: Id<"videos">) {
     isLoading: !video,
   };
 }
-

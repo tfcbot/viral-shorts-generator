@@ -4,16 +4,13 @@ import {
   mockGeneratingVideo, 
   mockFailedVideo, 
   mockRateLimit, 
-  mockVideoStats,
-  mockEnhancedVideo,
-  mockVideoWithError,
-  mockVideoWithExpiredUrl
+  mockVideoStats
 } from './factories'
 
 export const createConvexMocks = () => {
   const mockDatabase = {
     videos: [mockVideo, mockGeneratingVideo, mockFailedVideo],
-    enhancedVideos: [mockEnhancedVideo, mockVideoWithError, mockVideoWithExpiredUrl],
+    enhancedVideos: [mockVideo, mockGeneratingVideo, mockFailedVideo],
   }
 
   const mockQueries = {
@@ -83,7 +80,8 @@ export const createConvexMocks = () => {
     'videos.ensureFreshVideoUrl': vi.fn().mockImplementation((args) => {
       const video = mockDatabase.enhancedVideos.find(v => v._id === args.id)
       if (video) {
-        video.urlState = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (video as any).urlState = {
           lastGenerated: Date.now(),
           expiresAt: Date.now() + 24 * 60 * 60 * 1000,
           needsRefresh: false,
