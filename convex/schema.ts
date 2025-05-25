@@ -24,6 +24,8 @@ export default defineSchema({
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
     error: v.optional(v.string()),
+    // Add creditsUsed as optional field to match existing data
+    creditsUsed: v.optional(v.number()),
     metadata: v.optional(v.object({
       duration: v.optional(v.number()),
       resolution: v.optional(v.string()),
