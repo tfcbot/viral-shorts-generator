@@ -68,15 +68,9 @@ function LandingContent() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <SignUpButton mode="modal">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium text-lg transition-colors w-full sm:w-auto shadow-sm hover:shadow">
-                Get Started Free
-              </button>
-            </SignUpButton>
-            
             <SignInButton mode="modal">
-              <button className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-500 px-6 py-3 rounded-md font-medium text-lg transition-colors w-full sm:w-auto">
-                Sign In
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium text-lg transition-colors w-full sm:w-auto shadow-sm hover:shadow">
+                Start Now
               </button>
             </SignInButton>
           </div>
