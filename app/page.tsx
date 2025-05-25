@@ -40,7 +40,7 @@ function RedirectToDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push("/dashboard");
+    router.push("/dashboard/studio");
   }, [router]);
 
   return (
@@ -48,7 +48,7 @@ function RedirectToDashboard() {
       <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading">
         <span className="sr-only">Redirecting...</span>
       </div>
-      <p className="text-lg mt-4 text-slate-800 dark:text-slate-200">Redirecting to dashboard...</p>
+      <p className="text-lg mt-4 text-slate-800 dark:text-slate-200">Redirecting to studio...</p>
     </div>
   );
 }
