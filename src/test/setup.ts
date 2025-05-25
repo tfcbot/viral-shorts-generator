@@ -1,6 +1,7 @@
 import { beforeEach, vi } from 'vitest'
 import '@testing-library/jest-dom'
 import React from 'react'
+import { render as originalRender } from '@testing-library/react'
 
 // Make React available globally for mocks
 global.React = React
@@ -110,6 +111,22 @@ vi.mock('react-hot-toast', () => ({
   },
   Toaster: () => React.createElement('div', { 'data-testid': 'toaster' }),
 }))
+
+// Test wrapper that provides all necessary context
+const TestWrapper = ({ children }: { children: React.ReactNode }) => {
+  return React.createElement(MockConvexProvider, {}, children)
+}
+
+// Override the render function to automatically wrap with providers
+const customRender = (ui: React.ReactElement, options = {}) => {
+  return originalRender(ui, { wrapper: TestWrapper, ...options })
+}
+
+// Re-export everything from testing-library/react
+export * from '@testing-library/react'
+
+// Override render
+export { customRender as render }
 
 // Export mocks for use in tests
 export { mockUseQuery, mockUseMutation, mockUseAction }
