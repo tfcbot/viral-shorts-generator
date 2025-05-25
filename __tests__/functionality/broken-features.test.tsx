@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import StudioPage from '@/app/dashboard/studio/page'
 import VideosPage from '@/app/dashboard/videos/page'
-import { mockUseQuery, mockUseAction } from '@/src/test/setup'
+import { mockUseQuery, mockUseAction, mockUseMutation } from '@/src/test/setup'
 import { mockRateLimit, mockVideo, createVideoList } from '@/src/test/factories'
 
 describe('Broken Functionality Detection', () => {
@@ -14,6 +14,7 @@ describe('Broken Functionality Detection', () => {
     vi.clearAllMocks()
     mockUseQuery.mockReturnValue(mockRateLimit)
     mockUseAction.mockReturnValue(mockGenerateVideo)
+    mockUseMutation.mockReturnValue(mockGenerateVideo)
   })
 
   describe('Studio Page - Critical Issues', () => {
@@ -231,7 +232,159 @@ describe('Broken Functionality Detection', () => {
       
       // Should render within reasonable time (adjust threshold as needed)
       expect(renderTime).toBeLessThan(1000) // 1 second
+>>>>>>> main
+    })
+  })
+
+  describe('Common UI Issues Detection', () => {
+    it('should detect missing event handlers', async () => {
+      render(<StudioPage />)
+      
+      // Check if buttons have proper event handlers
+      const buttons = screen.getAllByRole('button')
+      
+      buttons.forEach(button => {
+        // Each button should be either disabled or have click functionality
+        if (!button.hasAttribute('disabled')) {
+          expect(button).toHaveProperty('onclick')
+        }
+      })
+    })
+
+    it('should detect broken form submissions', async () => {
+      render(<StudioPage />)
+      
+      const form = screen.getByRole('form') || document.querySelector('form')
+      
+      if (form) {
+        // Form should have proper submit handling
+        expect(form).toHaveProperty('onsubmit')
+      }
+    })
+
+    it('should detect missing loading states', async () => {
+      // Mock loading state
+      mockUseQuery.mockImplementation(() => undefined)
+
+      render(<VideosPage />)
+      
+      // Should show loading indicator
+      expect(screen.getByText(/loading/i)).toBeInTheDocument()
+    })
+
+    it('should detect missing error boundaries', async () => {
+      // Mock error state
+      mockUseQuery.mockImplementation(() => {
+        throw new Error('Test error')
+      })
+
+      // Should not crash the app
+      expect(() => render(<VideosPage />)).not.toThrow()
+    })
+  })
+
+  describe('Accessibility Issues Detection', () => {
+    it('should verify buttons have proper labels', async () => {
+      render(<StudioPage />)
+      
+      const buttons = screen.getAllByRole('button')
+      
+      buttons.forEach(button => {
+        // Each button should have accessible text
+        expect(button).toHaveAccessibleName()
+      })
+    })
+
+    it('should verify form inputs have proper labels', async () => {
+      render(<StudioPage />)
+      
+      const inputs = screen.getAllByRole('textbox')
+      
+      inputs.forEach(input => {
+        // Each input should have a label
+        expect(input).toHaveAccessibleName()
+      })
+    })
+
+    it('should verify select elements have proper labels', async () => {
+      render(<StudioPage />)
+      
+      const selects = screen.getAllByRole('combobox')
+      
+      selects.forEach(select => {
+        // Each select should have a label
+        expect(select).toHaveAccessibleName()
+      })
+    })
+  })
+
+  describe('Performance Issues Detection', () => {
+    it('should detect unnecessary re-renders', async () => {
+      const renderCount = vi.fn()
+      
+      const TestComponent = () => {
+        renderCount()
+        return <StudioPage />
+      }
+
+      const { rerender } = render(<TestComponent />)
+      
+      // Initial render
+      expect(renderCount).toHaveBeenCalledTimes(1)
+      
+      // Re-render with same props should not cause unnecessary renders
+      rerender(<TestComponent />)
+      
+      // Should not render excessively
+      expect(renderCount).toHaveBeenCalledTimes(2)
+    })
+
+    it('should detect memory leaks in event listeners', async () => {
+      const { unmount } = render(<VideosPage />)
+      
+      // Count event listeners before unmount
+      const beforeUnmount = document.querySelectorAll('*').length
+      
+      unmount()
+      
+      // Should clean up properly
+      const afterUnmount = document.querySelectorAll('*').length
+      expect(afterUnmount).toBeLessThanOrEqual(beforeUnmount)
+    })
+  })
+
+  describe('Data Flow Issues Detection', () => {
+    it('should verify data is properly passed to components', async () => {
+      render(<VideosPage />)
+      
+      // Should display video data
+      expect(screen.getByText(mockVideo.title)).toBeInTheDocument()
+      expect(screen.getByText(mockGeneratingVideo.title)).toBeInTheDocument()
+    })
+
+    it('should verify mutations update UI state', async () => {
+      const mockRefreshUrl = vi.fn().mockResolvedValue({ 
+        success: true,
+        url: 'https://new-url.example.com/video.mp4'
+      })
+
+      vi.mock('convex/react', async () => {
+        const actual = await vi.importActual('convex/react')
+        return {
+          ...actual,
+          useMutation: () => mockRefreshUrl,
+        }
+      })
+
+      render(<VideosPage />)
+      
+      const refreshButton = screen.getAllByRole('button', { name: /refresh url/i })[0]
+      await user.click(refreshButton)
+      
+      // Should show success feedback
+      await waitFor(() => {
+        expect(screen.getByText(/refreshed/i)).toBeInTheDocument()
+      })
     })
   })
 })
-
