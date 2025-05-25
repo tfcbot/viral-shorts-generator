@@ -85,7 +85,7 @@ export const generateVideo = action({
     }
     
     try {
-      // 1. Create a video record with "generating" status
+      // 1. Create a video record with "generating" status and enhanced logging
       videoId = await ctx.runMutation(api.videos.createVideoRecord, {
         userId,
         title: args.title,
@@ -110,26 +110,51 @@ export const generateVideo = action({
         cfgScale: input.cfg_scale,
       });
       
-      // 3. Call Fal.ai API using Kling V2 Master model
+      // 3. Call Fal.ai API using Kling V2 Master model with enhanced logging
       const falResponse = await fal.subscribe("fal-ai/kling-video/v2/master/text-to-video", {
         input,
         logs: true,
-        onQueueUpdate: (update: QueueUpdate) => {
+        onQueueUpdate: async (update: QueueUpdate) => {
           console.log(`[Video ${videoId}] Queue Status: ${update.status}`);
+          
+          // Update video status with queue information
+          await ctx.runMutation(api.videos.updateVideoStatus, {
+            id: videoId!,
+            status: "generating",
+            falStatus: update.status,
+            queuePosition: update.position,
+            logMessage: `Queue status: ${update.status}${update.position ? ` (position: ${update.position})` : ''}`,
+          });
           
           if (update.position) {
             console.log(`[Video ${videoId}] Queue Position: ${update.position}`);
           }
           
           if (update.status === "IN_PROGRESS" && update.logs) {
-            update.logs.forEach(log => {
+            for (const log of update.logs) {
               console.log(`[Video ${videoId}] Processing: ${log.message}`);
-            });
+              
+              // Log processing updates
+              await ctx.runMutation(api.videos.updateVideoStatus, {
+                id: videoId!,
+                status: "generating",
+                falStatus: "IN_PROGRESS",
+                logMessage: log.message,
+              });
+            }
           }
         },
       }) as KlingV2Response;
       
       console.log(`[Video ${videoId}] Generation completed. Request ID: ${falResponse.requestId}`);
+      
+      // Update video with FAL request ID
+      await ctx.runMutation(api.videos.updateVideoStatus, {
+        id: videoId,
+        status: "generating",
+        falStatus: "COMPLETED",
+        logMessage: `Generation completed. Request ID: ${falResponse.requestId}`,
+      });
       
       // 4. Validate response
       if (!falResponse.data?.video?.url) {
@@ -138,6 +163,7 @@ export const generateVideo = action({
           id: videoId,
           status: "failed",
           error: "No video URL returned from Fal.ai",
+          logMessage: "Failed: No video URL in response",
         });
         return { 
           success: false, 
@@ -146,9 +172,15 @@ export const generateVideo = action({
         };
       }
       
-      // 5. Download the generated video
+      // 5. Download the generated video with progress logging
       const videoUrl = falResponse.data.video.url;
       console.log(`[Video ${videoId}] Downloading video from: ${videoUrl}`);
+      
+      await ctx.runMutation(api.videos.updateVideoStatus, {
+        id: videoId,
+        status: "generating",
+        logMessage: "Downloading video from Fal.ai",
+      });
       
       const videoFetch = await fetch(videoUrl);
       
@@ -160,6 +192,7 @@ export const generateVideo = action({
           id: videoId,
           status: "failed",
           error: errorMsg,
+          logMessage: `Download failed: ${errorMsg}`,
         });
         return { 
           success: false, 
@@ -174,11 +207,17 @@ export const generateVideo = action({
       
       console.log(`[Video ${videoId}] Downloaded video: ${videoBlob.size} bytes, type: ${contentType}`);
       
+      await ctx.runMutation(api.videos.updateVideoStatus, {
+        id: videoId,
+        status: "generating",
+        logMessage: `Downloaded video: ${Math.round(videoBlob.size / 1024 / 1024 * 100) / 100}MB`,
+      });
+      
       // 7. Store the video in Convex storage
       const storageId = await ctx.storage.store(videoBlob);
       console.log(`[Video ${videoId}] Stored in Convex with ID: ${storageId}`);
       
-      // 8. Update the video record with completion data
+      // 8. Update the video record with completion data using enhanced mutation
       await ctx.runMutation(api.videos.updateVideoWithStorage, {
         id: videoId,
         storageId,
@@ -202,7 +241,7 @@ export const generateVideo = action({
       };
       
     } catch (error) {
-      // Handle any unexpected errors
+      // Handle any unexpected errors with enhanced logging
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       console.error(`[Video ${videoId}] Error during generation:`, error);
       
@@ -212,6 +251,7 @@ export const generateVideo = action({
           id: videoId,
           status: "failed",
           error: errorMessage,
+          logMessage: `Generation failed: ${errorMessage}`,
         });
       }
       
@@ -222,4 +262,4 @@ export const generateVideo = action({
       };
     }
   },
-}); 
+});

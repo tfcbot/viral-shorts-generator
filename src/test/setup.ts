@@ -5,10 +5,15 @@ import React from 'react'
 // Make React available globally for mocks
 global.React = React
 
-// Global mock for Convex
+// Global mock for Convex with proper provider
 const mockUseQuery = vi.fn()
 const mockUseMutation = vi.fn()
 const mockUseAction = vi.fn()
+
+// Mock ConvexProvider to avoid client setup issues
+const MockConvexProvider = ({ children }: { children: React.ReactNode }) => {
+  return React.createElement('div', { 'data-testid': 'convex-provider' }, children)
+}
 
 vi.mock('convex/react', () => ({
   useQuery: mockUseQuery,
@@ -18,6 +23,8 @@ vi.mock('convex/react', () => ({
     isAuthenticated: true,
     isLoading: false,
   })),
+  ConvexProvider: MockConvexProvider,
+  ConvexReactClient: vi.fn(() => ({})),
 }))
 
 // Global mock for API
@@ -28,7 +35,18 @@ vi.mock('@/convex/_generated/api', () => ({
       getVideoStats: 'getVideoStats', 
       checkRateLimit: 'checkRateLimit',
       getVideo: 'getVideo',
-      refreshVideoUrl: 'refreshVideoUrl'
+      refreshVideoUrl: 'refreshVideoUrl',
+      // Enhanced state management endpoints
+      getGeneratingVideosStatus: 'getGeneratingVideosStatus',
+      getUserSession: 'getUserSession',
+      retryVideoGeneration: 'retryVideoGeneration',
+      updateUserPreferences: 'updateUserPreferences',
+      updateUserActivity: 'updateUserActivity',
+      cleanupExpiredUrls: 'cleanupExpiredUrls',
+      // Core mutations
+      createVideoRecord: 'createVideoRecord',
+      updateVideoStatus: 'updateVideoStatus',
+      updateVideoWithStorage: 'updateVideoWithStorage',
     },
     videoActions: {
       generateVideo: 'generateVideo'
@@ -79,6 +97,12 @@ vi.mock('next/link', () => ({
 // Mock react-hot-toast
 vi.mock('react-hot-toast', () => ({
   default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    loading: vi.fn(),
+    dismiss: vi.fn(),
+  },
+  toast: {
     success: vi.fn(),
     error: vi.fn(),
     loading: vi.fn(),

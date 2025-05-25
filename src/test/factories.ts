@@ -1,49 +1,104 @@
-import { Id } from '@/convex/_generated/dataModel'
+import { Id } from "@/convex/_generated/dataModel";
 
-export const mockUser = {
-  id: 'user-123',
-  firstName: 'Test',
-  lastName: 'User',
-  emailAddresses: [{ emailAddress: 'test@example.com' }],
-}
-
+// Enhanced mock video data with new schema fields
 export const mockVideo = {
-  _id: 'video-123' as Id<'videos'>,
-  userId: 'user-123',
-  title: 'Test Video',
-  prompt: 'A test video prompt',
-  status: 'completed' as const,
-  storageId: 'storage-123' as Id<'_storage'>,
-  createdAt: Date.now(),
-  completedAt: Date.now(),
-  url: 'https://example.com/video.mp4',
+  _id: "test-video-123" as Id<"videos">,
+  userId: "user_123",
+  title: "Test Video",
+  prompt: "A beautiful sunset over mountains",
+  status: "completed" as const,
+  createdAt: Date.now() - 3600000, // 1 hour ago
+  completedAt: Date.now() - 1800000, // 30 minutes ago
+  url: "https://example.com/video.mp4",
+  urlCached: true,
   metadata: {
-    duration: 10,
-    aspectRatio: '16:9',
+    duration: 5,
+    aspectRatio: "16:9",
     fileSize: 1024000,
-    model: 'kling-v2-master',
-    resolution: '1280x720',
+    model: "kling-v2-master",
   },
-}
+  // Enhanced schema fields
+  lastUrlRefresh: Date.now() - 1800000,
+  urlExpiresAt: Date.now() + 18000000, // 5 hours from now
+  retryCount: 0,
+  processingLogs: [
+    {
+      timestamp: Date.now() - 3600000,
+      message: "Video generation started",
+      level: "info" as const,
+    },
+    {
+      timestamp: Date.now() - 1800000,
+      message: "Video generation completed",
+      level: "info" as const,
+    },
+  ],
+  falRequestId: "fal-request-123",
+  falStatus: "COMPLETED",
+};
 
 export const mockGeneratingVideo = {
-  ...mockVideo,
-  _id: 'video-generating-123' as Id<'videos'>,
-  status: 'generating' as const,
-  storageId: undefined,
-  completedAt: undefined,
-  url: undefined,
-}
+  _id: "test-video-generating" as Id<"videos">,
+  userId: "user_123",
+  title: "Generating Video",
+  prompt: "A dynamic cityscape at night",
+  status: "generating" as const,
+  createdAt: Date.now() - 600000, // 10 minutes ago
+  retryCount: 0,
+  processingLogs: [
+    {
+      timestamp: Date.now() - 600000,
+      message: "Video generation started",
+      level: "info" as const,
+    },
+    {
+      timestamp: Date.now() - 300000,
+      message: "Queue status: IN_PROGRESS",
+      level: "info" as const,
+    },
+  ],
+  falRequestId: "fal-request-generating",
+  falStatus: "IN_PROGRESS",
+  queuePosition: 2,
+};
 
 export const mockFailedVideo = {
-  ...mockVideo,
-  _id: 'video-failed-123' as Id<'videos'>,
-  status: 'failed' as const,
-  error: 'Generation failed',
-  storageId: undefined,
-  completedAt: undefined,
-  url: undefined,
-}
+  _id: "test-video-failed" as Id<"videos">,
+  userId: "user_123",
+  title: "Failed Video",
+  prompt: "A complex scene that failed",
+  status: "failed" as const,
+  createdAt: Date.now() - 7200000, // 2 hours ago
+  error: "Generation timeout",
+  retryCount: 1,
+  lastRetryAt: Date.now() - 3600000,
+  processingLogs: [
+    {
+      timestamp: Date.now() - 7200000,
+      message: "Video generation started",
+      level: "info" as const,
+    },
+    {
+      timestamp: Date.now() - 3600000,
+      message: "Retry attempt 1 started",
+      level: "info" as const,
+    },
+    {
+      timestamp: Date.now() - 3600000,
+      message: "Generation failed: Generation timeout",
+      level: "error" as const,
+    },
+  ],
+  falRequestId: "fal-request-failed",
+  falStatus: "FAILED",
+};
+
+export const mockVideoStats = {
+  total: 10,
+  generating: 1,
+  completed: 8,
+  failed: 1,
+};
 
 export const mockRateLimit = {
   canCreateVideo: true,
@@ -52,52 +107,96 @@ export const mockRateLimit = {
   dailyCount: 3,
   maxDaily: 20,
   timeUntilReset: 86400000, // 24 hours
-}
+  recentVideos: [
+    {
+      id: "test-video-123" as Id<"videos">,
+      status: "completed" as const,
+      createdAt: Date.now() - 3600000,
+    },
+    {
+      id: "test-video-generating" as Id<"videos">,
+      status: "generating" as const,
+      createdAt: Date.now() - 600000,
+    },
+  ],
+};
 
-export const mockVideoStats = {
-  total: 10,
-  generating: 2,
-  completed: 7,
-  failed: 1,
-}
+export const mockRateLimitExceeded = {
+  ...mockRateLimit,
+  canCreateVideo: false,
+  generatingCount: 5,
+  dailyCount: 20,
+};
 
-// Enhanced video with new state management fields
-export const mockEnhancedVideo = {
-  ...mockVideo,
-  errorState: {
-    hasError: false,
-    errorType: '',
-    errorMessage: '',
-    lastErrorAt: 0,
+export const mockGeneratingVideosStatus = [
+  {
+    id: "test-video-generating" as Id<"videos">,
+    title: "Generating Video",
+    createdAt: Date.now() - 600000,
+    falRequestId: "fal-request-generating",
+    falStatus: "IN_PROGRESS",
+    queuePosition: 2,
+    processingLogs: [
+      {
+        timestamp: Date.now() - 600000,
+        message: "Video generation started",
+        level: "info" as const,
+      },
+      {
+        timestamp: Date.now() - 300000,
+        message: "Queue status: IN_PROGRESS",
+        level: "info" as const,
+      },
+    ],
     retryCount: 0,
   },
-  urlState: {
-    lastGenerated: Date.now(),
-    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-    needsRefresh: false,
-  },
-}
+];
 
-export const mockVideoWithError = {
-  ...mockEnhancedVideo,
-  _id: 'video-error-123' as Id<'videos'>,
-  status: 'failed' as const,
-  errorState: {
-    hasError: true,
-    errorType: 'generation',
-    errorMessage: 'FAL.ai API error',
-    lastErrorAt: Date.now(),
-    retryCount: 1,
+export const mockUserSession = {
+  _id: "test-session-123" as Id<"userSessions">,
+  userId: "user_123",
+  lastActivity: Date.now(),
+  activeVideos: ["test-video-generating" as Id<"videos">],
+  preferences: {
+    autoRefreshInterval: 30000,
+    notificationsEnabled: true,
+    defaultAspectRatio: "16:9",
+    defaultDuration: "5",
   },
-}
+};
 
-export const mockVideoWithExpiredUrl = {
-  ...mockEnhancedVideo,
-  _id: 'video-expired-123' as Id<'videos'>,
-  urlState: {
-    lastGenerated: Date.now() - 25 * 60 * 60 * 1000, // 25 hours ago
-    expiresAt: Date.now() - 1 * 60 * 60 * 1000, // 1 hour ago
-    needsRefresh: true,
-  },
-}
+export const mockVideoUrl = {
+  _id: "test-url-123" as Id<"videoUrls">,
+  videoId: "test-video-123" as Id<"videos">,
+  url: "https://example.com/video.mp4",
+  generatedAt: Date.now() - 1800000,
+  expiresAt: Date.now() + 18000000,
+  isValid: true,
+};
+
+// Factory functions for creating test data
+export const createMockVideo = (overrides: Partial<typeof mockVideo> = {}) => ({
+  ...mockVideo,
+  ...overrides,
+});
+
+export const createMockGeneratingVideo = (overrides: Partial<typeof mockGeneratingVideo> = {}) => ({
+  ...mockGeneratingVideo,
+  ...overrides,
+});
+
+export const createMockFailedVideo = (overrides: Partial<typeof mockFailedVideo> = {}) => ({
+  ...mockFailedVideo,
+  ...overrides,
+});
+
+export const createMockRateLimit = (overrides: Partial<typeof mockRateLimit> = {}) => ({
+  ...mockRateLimit,
+  ...overrides,
+});
+
+export const createMockUserSession = (overrides: Partial<typeof mockUserSession> = {}) => ({
+  ...mockUserSession,
+  ...overrides,
+});
 
