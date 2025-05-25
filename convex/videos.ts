@@ -14,29 +14,73 @@ export const checkRateLimit = query({
     const now = Date.now();
     const oneDayAgo = now - (24 * 60 * 60 * 1000); // 24 hours ago
     
-    // Get all user videos from the last 24 hours
-    const recentVideos = await ctx.db
-      .query("videos")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.gte(q.field("createdAt"), oneDayAgo))
-      .collect();
-    
-    // Count currently generating videos
-    const generatingCount = recentVideos.filter(v => v.status === "generating").length;
-    
-    // Count total videos created today
-    const dailyCount = recentVideos.length;
-    
-    const canCreateVideo = generatingCount < 5 && dailyCount < 20;
-    
-    return {
-      canCreateVideo,
-      generatingCount,
-      maxGenerating: 5,
-      dailyCount,
-      maxDaily: 20,
-      timeUntilReset: oneDayAgo + (24 * 60 * 60 * 1000) - now,
-    };
+    try {
+      // Get all user videos from the last 24 hours
+      const recentVideos = await ctx.db
+        .query("videos")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .filter((q) => q.gte(q.field("createdAt"), oneDayAgo))
+        .collect();
+      
+      // Count currently generating videos
+      const generatingCount = recentVideos.filter(v => v.status === "generating").length;
+      
+      // Count total videos created today
+      const dailyCount = recentVideos.length;
+      
+      const canCreateVideo = generatingCount < 5 && dailyCount < 20;
+      
+      // Update user session activity
+      await ctx.db
+        .query("userSessions")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first()
+        .then(async (session) => {
+          if (session) {
+            await ctx.db.patch(session._id, {
+              lastActivity: now,
+              activeVideos: recentVideos
+                .filter(v => v.status === "generating")
+                .map(v => v._id),
+            });
+          } else {
+            await ctx.db.insert("userSessions", {
+              userId,
+              lastActivity: now,
+              activeVideos: recentVideos
+                .filter(v => v.status === "generating")
+                .map(v => v._id),
+            });
+          }
+        });
+      
+      return {
+        canCreateVideo,
+        generatingCount,
+        maxGenerating: 5,
+        dailyCount,
+        maxDaily: 20,
+        timeUntilReset: oneDayAgo + (24 * 60 * 60 * 1000) - now,
+        recentVideos: recentVideos.map(v => ({
+          id: v._id,
+          status: v.status,
+          createdAt: v.createdAt,
+        })),
+      };
+    } catch (error) {
+      console.error("Error checking rate limit:", error);
+      // Return safe defaults on error
+      return {
+        canCreateVideo: false,
+        generatingCount: 0,
+        maxGenerating: 5,
+        dailyCount: 0,
+        maxDaily: 20,
+        timeUntilReset: 24 * 60 * 60 * 1000,
+        recentVideos: [],
+        error: "Failed to check rate limit",
+      };
+    }
   },
 });
 
@@ -46,11 +90,13 @@ export const createVideoRecord = mutation({
     userId: v.string(),
     title: v.string(),
     prompt: v.string(),
+    falRequestId: v.optional(v.string()),
   },
   returns: v.id("videos"),
   handler: async (ctx, args) => {
-    // Check rate limit before creating
     const now = Date.now();
+    
+    // Check rate limit before creating
     const oneDayAgo = now - (24 * 60 * 60 * 1000);
     
     const recentVideos = await ctx.db
@@ -69,14 +115,36 @@ export const createVideoRecord = mutation({
     if (dailyCount >= 20) {
       throw new Error("Daily limit exceeded: You can only create 20 videos per day");
     }
-    
-    return await ctx.db.insert("videos", {
+
+    const videoId = await ctx.db.insert("videos", {
       userId: args.userId,
       title: args.title,
       prompt: args.prompt,
       status: "generating",
-      createdAt: Date.now(),
+      createdAt: now,
+      falRequestId: args.falRequestId,
+      retryCount: 0,
+      processingLogs: [{
+        timestamp: now,
+        message: "Video generation started",
+        level: "info",
+      }],
     });
+
+    // Update user session with new active video
+    const session = await ctx.db
+      .query("userSessions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
+    if (session) {
+      await ctx.db.patch(session._id, {
+        lastActivity: now,
+        activeVideos: [...session.activeVideos, videoId],
+      });
+    }
+
+    return videoId;
   },
 });
 
@@ -86,6 +154,9 @@ export const updateVideoStatus = mutation({
     id: v.id("videos"),
     status: v.union(v.literal("generating"), v.literal("completed"), v.literal("failed")),
     error: v.optional(v.string()),
+    falStatus: v.optional(v.string()),
+    queuePosition: v.optional(v.number()),
+    logMessage: v.optional(v.string()),
   },
   returns: v.id("videos"),
   handler: async (ctx, args) => {
@@ -94,24 +165,61 @@ export const updateVideoStatus = mutation({
       throw new Error("Video not found");
     }
     
+    const now = Date.now();
     const updateData: any = {
       status: args.status,
     };
     
     if (args.status === "completed") {
-      updateData.completedAt = Date.now();
+      updateData.completedAt = now;
     }
     
     if (args.error) {
       updateData.error = args.error;
     }
-    
+
+    if (args.falStatus) {
+      updateData.falStatus = args.falStatus;
+    }
+
+    if (args.queuePosition !== undefined) {
+      updateData.queuePosition = args.queuePosition;
+    }
+
+    // Add processing log
+    const newLog = {
+      timestamp: now,
+      message: args.logMessage || `Status updated to ${args.status}`,
+      level: args.status === "failed" ? "error" as const : "info" as const,
+    };
+
+    updateData.processingLogs = [
+      ...(video.processingLogs || []),
+      newLog,
+    ];
+
     await ctx.db.patch(args.id, updateData);
+
+    // Update user session if video completed or failed
+    if (args.status === "completed" || args.status === "failed") {
+      const session = await ctx.db
+        .query("userSessions")
+        .withIndex("by_user", (q) => q.eq("userId", video.userId))
+        .first();
+
+      if (session) {
+        await ctx.db.patch(session._id, {
+          lastActivity: now,
+          activeVideos: session.activeVideos.filter(id => id !== args.id),
+        });
+      }
+    }
+
     return args.id;
   },
 });
 
-// Mutation to update video with storage ID
+// Enhanced mutation to update video with storage ID and URL caching
 export const updateVideoWithStorage = mutation({
   args: {
     id: v.id("videos"),
@@ -132,18 +240,47 @@ export const updateVideoWithStorage = mutation({
       throw new Error("Video not found");
     }
     
+    const now = Date.now();
+    const urlExpiresAt = now + (6 * 60 * 60 * 1000); // URLs expire in 6 hours
+    
     await ctx.db.patch(args.id, {
       storageId: args.storageId,
       status: args.status,
-      completedAt: Date.now(),
+      completedAt: now,
       metadata: args.metadata,
+      lastUrlRefresh: now,
+      urlExpiresAt,
+      processingLogs: [
+        ...(video.processingLogs || []),
+        {
+          timestamp: now,
+          message: "Video stored and URL cached",
+          level: "info",
+        },
+      ],
     });
+
+    // Generate and cache the initial URL
+    try {
+      const url = await ctx.storage.getUrl(args.storageId);
+      if (url) {
+        await ctx.db.insert("videoUrls", {
+          videoId: args.id,
+          url,
+          generatedAt: now,
+          expiresAt: urlExpiresAt,
+          isValid: true,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to generate initial URL:", error);
+    }
     
     return args.id;
   },
 });
 
-// Query to list user videos with URLs
+// Enhanced query to list user videos with smart URL management
 export const listUserVideos = query({
   args: {
     limit: v.optional(v.number()),
@@ -157,6 +294,7 @@ export const listUserVideos = query({
     
     const userId = identity.subject;
     const limit = args.limit ?? 50;
+    const now = Date.now();
     
     let videosQuery;
     
@@ -176,20 +314,59 @@ export const listUserVideos = query({
       .order("desc")
       .take(limit);
     
-    // Generate URLs for videos with storage IDs
+    // Smart URL generation with caching
     return await Promise.all(
       videos.map(async (video) => {
-        if (video.storageId) {
-          const url = await ctx.storage.getUrl(video.storageId);
-          return { ...video, url: url || undefined };
+        if (!video.storageId) {
+          return { ...video, url: undefined };
         }
+
+        // Check for cached URL first
+        const cachedUrl = await ctx.db
+          .query("videoUrls")
+          .withIndex("by_valid_urls", (q) => 
+            q.eq("videoId", video._id).eq("isValid", true)
+          )
+          .filter((q) => q.gt(q.field("expiresAt"), now))
+          .first();
+
+        if (cachedUrl) {
+          return { ...video, url: cachedUrl.url, urlCached: true };
+        }
+
+        // Generate new URL if no valid cache
+        try {
+          const url = await ctx.storage.getUrl(video.storageId);
+          if (url) {
+            // Cache the new URL
+            const expiresAt = now + (6 * 60 * 60 * 1000); // 6 hours
+            await ctx.db.insert("videoUrls", {
+              videoId: video._id,
+              url,
+              generatedAt: now,
+              expiresAt,
+              isValid: true,
+            });
+
+            // Update video's URL refresh timestamp
+            await ctx.db.patch(video._id, {
+              lastUrlRefresh: now,
+              urlExpiresAt: expiresAt,
+            });
+
+            return { ...video, url, urlCached: false };
+          }
+        } catch (error) {
+          console.error(`Failed to generate URL for video ${video._id}:`, error);
+        }
+        
         return { ...video, url: undefined };
       })
     );
   },
 });
 
-// Query to get a single video by ID
+// Enhanced query to get a single video with smart URL handling
 export const getVideo = query({
   args: {
     id: v.id("videos"),
@@ -206,23 +383,62 @@ export const getVideo = query({
     if (!video) {
       throw new Error("Video not found");
     }
-    
+
     // Ensure the user can only access their own videos
     if (video.userId !== userId) {
       throw new Error("Unauthorized");
     }
-    
-    // Generate URL if the video has a storage ID
-    if (video.storageId) {
+
+    if (!video.storageId) {
+      return { ...video, url: undefined };
+    }
+
+    const now = Date.now();
+
+    // Check for cached URL first
+    const cachedUrl = await ctx.db
+      .query("videoUrls")
+      .withIndex("by_valid_urls", (q) => 
+        q.eq("videoId", video._id).eq("isValid", true)
+      )
+      .filter((q) => q.gt(q.field("expiresAt"), now))
+      .first();
+
+    if (cachedUrl) {
+      return { ...video, url: cachedUrl.url, urlCached: true };
+    }
+
+    // Generate new URL if no valid cache
+    try {
       const url = await ctx.storage.getUrl(video.storageId);
-      return { ...video, url: url || undefined };
+      if (url) {
+        // Cache the new URL
+        const expiresAt = now + (6 * 60 * 60 * 1000); // 6 hours
+        await ctx.db.insert("videoUrls", {
+          videoId: video._id,
+          url,
+          generatedAt: now,
+          expiresAt,
+          isValid: true,
+        });
+
+        // Update video's URL refresh timestamp
+        await ctx.db.patch(video._id, {
+          lastUrlRefresh: now,
+          urlExpiresAt: expiresAt,
+        });
+
+        return { ...video, url, urlCached: false };
+      }
+    } catch (error) {
+      console.error(`Failed to generate URL for video ${video._id}:`, error);
     }
     
     return { ...video, url: undefined };
   },
 });
 
-// Query to refresh a video URL (useful when URLs expire)
+// Enhanced query to refresh a video URL with intelligent caching
 export const refreshVideoUrl = query({
   args: {
     id: v.id("videos"),
@@ -239,19 +455,56 @@ export const refreshVideoUrl = query({
     if (!video) {
       throw new Error("Video not found");
     }
-    
+
     // Ensure the user can only access their own videos
     if (video.userId !== userId) {
       throw new Error("Unauthorized");
     }
-    
-    // Generate a fresh URL if the video has a storage ID
-    if (video.storageId) {
+
+    if (!video.storageId) {
+      return { ...video, url: undefined, refreshedAt: Date.now() };
+    }
+
+    const now = Date.now();
+
+    try {
+      // Invalidate existing cached URLs
+      const existingUrls = await ctx.db
+        .query("videoUrls")
+        .withIndex("by_video", (q) => q.eq("videoId", video._id))
+        .collect();
+
+      for (const urlRecord of existingUrls) {
+        await ctx.db.patch(urlRecord._id, { isValid: false });
+      }
+
+      // Generate fresh URL
       const url = await ctx.storage.getUrl(video.storageId);
-      return { ...video, url: url || undefined, refreshedAt: Date.now() };
+      if (url) {
+        const expiresAt = now + (6 * 60 * 60 * 1000); // 6 hours
+        
+        // Cache the new URL
+        await ctx.db.insert("videoUrls", {
+          videoId: video._id,
+          url,
+          generatedAt: now,
+          expiresAt,
+          isValid: true,
+        });
+
+        // Update video's URL refresh timestamp
+        await ctx.db.patch(video._id, {
+          lastUrlRefresh: now,
+          urlExpiresAt: expiresAt,
+        });
+
+        return { ...video, url, refreshedAt: now, urlCached: false };
+      }
+    } catch (error) {
+      console.error(`Failed to refresh URL for video ${video._id}:`, error);
     }
     
-    return { ...video, url: undefined, refreshedAt: Date.now() };
+    return { ...video, url: undefined, refreshedAt: now };
   },
 });
 
@@ -286,4 +539,183 @@ export const getVideoStats = query({
     
     return stats;
   },
-}); 
+});
+
+// New query to get real-time updates for generating videos
+export const getGeneratingVideosStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+    
+    const userId = identity.subject;
+    
+    const generatingVideos = await ctx.db
+      .query("videos")
+      .withIndex("by_user_and_status", (q) => 
+        q.eq("userId", userId).eq("status", "generating")
+      )
+      .collect();
+    
+    return generatingVideos.map(video => ({
+      id: video._id,
+      title: video.title,
+      createdAt: video.createdAt,
+      falRequestId: video.falRequestId,
+      falStatus: video.falStatus,
+      queuePosition: video.queuePosition,
+      processingLogs: video.processingLogs || [],
+      retryCount: video.retryCount || 0,
+    }));
+  },
+});
+
+// New mutation to retry failed video generation
+export const retryVideoGeneration = mutation({
+  args: {
+    id: v.id("videos"),
+  },
+  returns: v.object({
+    success: v.boolean(),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+    
+    const userId = identity.subject;
+    const video = await ctx.db.get(args.id);
+    
+    if (!video) {
+      throw new Error("Video not found");
+    }
+
+    if (video.userId !== userId) {
+      throw new Error("Unauthorized");
+    }
+
+    if (video.status !== "failed") {
+      return { success: false, error: "Video is not in failed state" };
+    }
+
+    const retryCount = (video.retryCount || 0) + 1;
+    if (retryCount > 3) {
+      return { success: false, error: "Maximum retry attempts exceeded" };
+    }
+
+    const now = Date.now();
+    
+    await ctx.db.patch(args.id, {
+      status: "generating",
+      error: undefined,
+      retryCount,
+      lastRetryAt: now,
+      processingLogs: [
+        ...(video.processingLogs || []),
+        {
+          timestamp: now,
+          message: `Retry attempt ${retryCount} started`,
+          level: "info",
+        },
+      ],
+    });
+
+    return { success: true };
+  },
+});
+
+// New query to get user session and preferences
+export const getUserSession = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+    
+    const userId = identity.subject;
+    
+    const session = await ctx.db
+      .query("userSessions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (!session) {
+      // Create default session
+      const now = Date.now();
+      const sessionId = await ctx.db.insert("userSessions", {
+        userId,
+        lastActivity: now,
+        activeVideos: [],
+        preferences: {
+          autoRefreshInterval: 30000, // 30 seconds
+          notificationsEnabled: true,
+          defaultAspectRatio: "16:9",
+          defaultDuration: "5",
+        },
+      });
+      
+      return await ctx.db.get(sessionId);
+    }
+
+    return session;
+  },
+});
+
+// New mutation to update user preferences
+export const updateUserPreferences = mutation({
+  args: {
+    preferences: v.object({
+      autoRefreshInterval: v.optional(v.number()),
+      notificationsEnabled: v.optional(v.boolean()),
+      defaultAspectRatio: v.optional(v.string()),
+      defaultDuration: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+    
+    const userId = identity.subject;
+    
+    const session = await ctx.db
+      .query("userSessions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    if (session) {
+      await ctx.db.patch(session._id, {
+        preferences: {
+          ...session.preferences,
+          ...args.preferences,
+        },
+        lastActivity: Date.now(),
+      });
+    }
+  },
+});
+
+// New query to clean up expired URLs (can be called periodically)
+export const cleanupExpiredUrls = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    
+    const expiredUrls = await ctx.db
+      .query("videoUrls")
+      .withIndex("by_expiry", (q) => q.lt("expiresAt", now))
+      .collect();
+
+    for (const urlRecord of expiredUrls) {
+      await ctx.db.patch(urlRecord._id, { isValid: false });
+    }
+
+    return { cleaned: expiredUrls.length };
+  },
+});
