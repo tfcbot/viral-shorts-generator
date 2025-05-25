@@ -114,7 +114,7 @@ vi.mock('react-hot-toast', () => ({
 
 // Test wrapper that provides all necessary context
 const TestWrapper = ({ children }: { children: React.ReactNode }) => {
-  return React.createElement(MockConvexProvider, {}, children)
+  return React.createElement(MockConvexProvider, null, children)
 }
 
 // Override the render function to automatically wrap with providers
