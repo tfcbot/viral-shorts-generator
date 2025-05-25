@@ -12,7 +12,7 @@ A Next.js application for creating viral YouTube shorts using AI video generatio
 
 ## 🚀 Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fblurware%2Fviral-shorts-generator&env=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,CLERK_JWT_ISSUER_DOMAIN,CONVEX_DEPLOYMENT,FAL_KEY&envDescription=API%20keys%20needed%20for%20authentication%2C%20backend%2C%20and%20AI%20video%20generation&envLink=https%3A%2F%2Fgithub.com%2Fblurware%2Fviral-shorts-generator%23setup-instructions)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator&env=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,CLERK_JWT_ISSUER_DOMAIN,FAL_KEY&envDescription=API%20keys%20needed%20for%20authentication%20and%20AI%20video%20generation&envLink=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator%23setup-instructions)
 
 ## Setup Instructions
 
@@ -23,7 +23,7 @@ A Next.js application for creating viral YouTube shorts using AI video generatio
 npm install -g convex
 npx convex deploy
 ```
-Copy the deployment URL for your environment variables.
+Copy the deployment URL and add it as `CONVEX_DEPLOYMENT` to your Vercel environment variables.
 
 ### 3. Set up Clerk Authentication
 - Create account at [clerk.com](https://clerk.com)
@@ -40,7 +40,6 @@ Copy the deployment URL for your environment variables.
 Click the deploy button above and add these environment variables:
 
 ```env
-CONVEX_DEPLOYMENT=your-convex-deployment-url
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 CLERK_JWT_ISSUER_DOMAIN=https://your-clerk-domain.clerk.accounts.dev
