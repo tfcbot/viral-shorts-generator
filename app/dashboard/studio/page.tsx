@@ -229,7 +229,7 @@ function AIGenerationWorkspace() {
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe what you want to see in your video... Be specific about actions, camera movements, and visual details. For example: 'A person walking through a futuristic city with neon lights and flying cars, cinematic camera movement following them.'"
+                placeholder="Describe what you want to see in your video... Be specific about actions, camera movements, and visual details. For example: &apos;A person walking through a futuristic city with neon lights and flying cars, cinematic camera movement following them.&apos;"
                 rows={5}
                 maxLength={1000}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 resize-none"
@@ -302,7 +302,7 @@ function AIGenerationWorkspace() {
             <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
-                <span>Add camera movements like "drone shot", "close-up", or "tracking"</span>
+                <span>Add camera movements like &quot;drone shot&quot;, &quot;close-up&quot;, or &quot;tracking&quot;</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
@@ -310,7 +310,7 @@ function AIGenerationWorkspace() {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
-                <span>Set the mood with lighting: "golden hour", "neon lights", "dramatic shadows"</span>
+                <span>Set the mood with lighting: &quot;golden hour&quot;, &quot;neon lights&quot;, &quot;dramatic shadows&quot;</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
@@ -325,9 +325,9 @@ function AIGenerationWorkspace() {
               Example Prompts
             </h3>
             <div className="space-y-2 text-sm text-purple-800 dark:text-purple-200">
-              <p className="italic">"A cat wearing sunglasses walking in slow motion through a field of flowers, cinematic close-up shot"</p>
-              <p className="italic">"Time-lapse of a city at night with traffic lights creating light trails, aerial view"</p>
-              <p className="italic">"A coffee cup steaming on a wooden table, cozy morning light streaming through window"</p>
+              <p className="italic">&quot;A cat wearing sunglasses walking in slow motion through a field of flowers, cinematic close-up shot&quot;</p>
+              <p className="italic">&quot;Time-lapse of a city at night with traffic lights creating light trails, aerial view&quot;</p>
+              <p className="italic">&quot;A coffee cup steaming on a wooden table, cozy morning light streaming through window&quot;</p>
             </div>
           </div>
         </div>
@@ -359,7 +359,7 @@ function PresetCard({
         </span>
       </div>
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{description}</p>
-      <p className="text-xs text-slate-500 dark:text-slate-500 italic">"{example}"</p>
+      <p className="text-xs text-slate-500 dark:text-slate-500 italic">&quot;{example}&quot;</p>
     </button>
   );
 }
@@ -396,7 +396,7 @@ function PlanUpgradePrompt() {
           <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
             <div className="text-2xl mb-2">📈</div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Viral Optimization</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Content optimized for YouTube's algorithm</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Content optimized for YouTube&apos;s algorithm</p>
           </div>
         </div>
 

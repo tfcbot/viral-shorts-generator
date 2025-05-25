@@ -71,7 +71,7 @@ export default function PricingPage() {
             <div className="text-3xl mb-3">📈</div>
             <h3 className="font-semibold text-slate-900 dark:text-white mb-2">Viral Optimization</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Content optimized for YouTube's algorithm
+              Content optimized for YouTube&apos;s algorithm
             </p>
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function PricingPage() {
           <div className="max-w-2xl mx-auto space-y-6">
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
               <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-                What's included in the video generation feature?
+                What&apos;s included in the video generation feature?
               </h3>
               <p className="text-slate-600 dark:text-slate-400">
                 Full access to our AI video generation engine, allowing you to create viral YouTube shorts from text prompts with customizable duration and aspect ratios.
@@ -184,7 +184,7 @@ export default function PricingPage() {
                 Can I cancel my subscription anytime?
               </h3>
               <p className="text-slate-600 dark:text-slate-400">
-                Yes, you can cancel your subscription at any time. You'll continue to have access to the features until the end of your current billing period.
+                Yes, you can cancel your subscription at any time. You&apos;ll continue to have access to the features until the end of your current billing period.
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -192,7 +192,7 @@ export default function PricingPage() {
                 What happens to my videos if I cancel?
               </h3>
               <p className="text-slate-600 dark:text-slate-400">
-                All your previously generated videos remain accessible in your account. You just won't be able to generate new videos without an active subscription.
+                All your previously generated videos remain accessible in your account. You just won&apos;t be able to generate new videos without an active subscription.
               </p>
             </div>
           </div>

@@ -50,7 +50,11 @@ export interface RateLimit {
   dailyCount: number;
   maxDaily: number;
   timeUntilReset: number;
-  planInfo?: any;
+  planInfo?: {
+    name?: string;
+    tier?: string;
+    features?: string[];
+  } | null;
   recentVideos?: Array<{
     id: Id<"videos">;
     status: VideoStatus;
