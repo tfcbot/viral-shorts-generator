@@ -1,41 +1,59 @@
+import { beforeEach, vi } from 'vitest'
 import '@testing-library/jest-dom'
-import { vi } from 'vitest'
 import React from 'react'
 
-// Mock Convex completely - no real API calls needed
+// Make React available globally for mocks
+global.React = React
+
+// Global mock for Convex
+const mockUseQuery = vi.fn()
+const mockUseMutation = vi.fn()
+const mockUseAction = vi.fn()
+
 vi.mock('convex/react', () => ({
-  useQuery: vi.fn(),
-  useMutation: vi.fn(),
-  useAction: vi.fn(),
-  useConvexAuth: vi.fn(() => ({ 
-    isAuthenticated: true, 
-    isLoading: false 
+  useQuery: mockUseQuery,
+  useMutation: () => mockUseMutation,
+  useAction: () => mockUseAction,
+  useConvexAuth: vi.fn(() => ({
+    isAuthenticated: true,
+    isLoading: false,
   })),
-  ConvexProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
 
-// Mock Clerk authentication - no real auth needed
+// Global mock for API
+vi.mock('@/convex/_generated/api', () => ({
+  api: {
+    videos: {
+      listUserVideos: 'listUserVideos',
+      getVideoStats: 'getVideoStats', 
+      checkRateLimit: 'checkRateLimit',
+      getVideo: 'getVideo',
+      refreshVideoUrl: 'refreshVideoUrl'
+    },
+    videoActions: {
+      generateVideo: 'generateVideo'
+    }
+  }
+}))
+
+// Mock Clerk
 vi.mock('@clerk/nextjs', () => ({
-  useUser: vi.fn(() => ({ 
-    user: { 
-      id: 'test-user-123', 
+  useUser: vi.fn(() => ({
+    user: {
+      id: 'user_123',
       firstName: 'Test',
       lastName: 'User',
-      emailAddresses: [{ emailAddress: 'test@example.com' }]
-    }, 
+      emailAddresses: [{ emailAddress: 'test@example.com' }],
+    },
     isLoaded: true,
-    isSignedIn: true 
   })),
   useAuth: vi.fn(() => ({
-    isLoaded: true,
     isSignedIn: true,
-    userId: 'test-user-123'
+    userId: 'user_123',
   })),
+  UserButton: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'user-button' }, children),
   SignInButton: ({ children }: { children: React.ReactNode }) => React.createElement('div', { 'data-testid': 'sign-in-button' }, children),
   SignUpButton: ({ children }: { children: React.ReactNode }) => React.createElement('div', { 'data-testid': 'sign-up-button' }, children),
-  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
-  SignedIn: ({ children }: { children: React.ReactNode }) => children,
-  SignedOut: () => null,
 }))
 
 // Mock Next.js router
@@ -44,9 +62,18 @@ vi.mock('next/navigation', () => ({
     push: vi.fn(),
     replace: vi.fn(),
     back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    prefetch: vi.fn(),
   }),
   usePathname: () => '/dashboard',
   useSearchParams: () => new URLSearchParams(),
+}))
+
+// Mock Next.js Link
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => 
+    React.createElement('a', { href, ...props }, children),
 }))
 
 // Mock react-hot-toast
@@ -54,20 +81,16 @@ vi.mock('react-hot-toast', () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),
-    info: vi.fn(),
+    loading: vi.fn(),
+    dismiss: vi.fn(),
   },
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-  },
-  Toaster: ({ children }: { children: React.ReactNode }) => React.createElement('div', { 'data-testid': 'toaster' }, children),
+  Toaster: () => React.createElement('div', { 'data-testid': 'toaster' }),
 }))
 
-// Mock FAL.ai client
-vi.mock('@fal-ai/client', () => ({
-  fal: {
-    config: vi.fn(),
-    subscribe: vi.fn(),
-  },
-}))
+// Export mocks for use in tests
+export { mockUseQuery, mockUseMutation, mockUseAction }
+
+// Reset all mocks before each test
+beforeEach(() => {
+  vi.clearAllMocks()
+})
