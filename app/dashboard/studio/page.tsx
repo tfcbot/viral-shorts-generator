@@ -5,12 +5,9 @@ import Link from "next/link";
 import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import toast, { Toaster } from "react-hot-toast";
-
-type CreateMode = "ai" | "template" | "upload";
+import { Protect } from "@clerk/nextjs";
 
 export default function StudioPage() {
-  const [activeMode, setActiveMode] = useState<CreateMode>("ai");
-
   return (
     <div className="space-y-6">
       <Toaster position="top-right" />
@@ -19,7 +16,7 @@ export default function StudioPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Studio</h1>
-          <p className="text-slate-600 dark:text-slate-300 mt-1">Create viral YouTube shorts without showing your face</p>
+          <p className="text-slate-600 dark:text-slate-300 mt-1">Create viral YouTube shorts with AI</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -34,49 +31,14 @@ export default function StudioPage() {
         </div>
       </div>
 
-      {/* Creation Mode Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-700">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveMode("ai")}
-            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeMode === "ai"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300"
-            }`}
-          >
-            🤖 AI Generation
-          </button>
-          
-          <button
-            onClick={() => setActiveMode("template")}
-            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeMode === "template"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300"
-            }`}
-          >
-            📋 Templates
-          </button>
-          
-          <button
-            onClick={() => setActiveMode("upload")}
-            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeMode === "upload"
-                ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300"
-            }`}
-          >
-            📤 Upload
-          </button>
-        </nav>
-      </div>
-
-      {/* Content based on active mode */}
+      {/* Main Content */}
       <div className="mt-6">
-        {activeMode === "ai" && <AIGenerationWorkspace />}
-        {activeMode === "template" && <TemplateWorkspace />}
-        {activeMode === "upload" && <UploadWorkspace />}
+        <Protect
+          plan="pro"
+          fallback={<PlanUpgradePrompt />}
+        >
+          <AIGenerationWorkspace />
+        </Protect>
       </div>
     </div>
   );
@@ -85,21 +47,19 @@ export default function StudioPage() {
 function AIGenerationWorkspace() {
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16" | "1:1">("16:9");
   const [duration, setDuration] = useState<"5" | "10">("5");
-  const [negativePrompt, setNegativePrompt] = useState("");
-  const [cfgScale, setCfgScale] = useState(0.5);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const generateVideo = useAction(api.videoActions.generateVideo);
   const rateLimit = useQuery(api.videos.checkRateLimit) || {
     canCreateVideo: true,
+    hasVideoGenerationAccess: true,
     generatingCount: 0,
     maxGenerating: 5,
     dailyCount: 0,
     maxDaily: 20,
     timeUntilReset: 0,
+    planInfo: null,
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,6 +72,11 @@ function AIGenerationWorkspace() {
     
     if (prompt.length > 1000) {
       toast.error("Prompt is too long. Maximum 1000 characters allowed.");
+      return;
+    }
+
+    if (!rateLimit.hasVideoGenerationAccess) {
+      toast.error("Video generation requires an active Pro subscription. Please upgrade to continue.");
       return;
     }
 
@@ -130,10 +95,8 @@ function AIGenerationWorkspace() {
       const result = await generateVideo({ 
         title: title.trim(), 
         prompt: prompt.trim(),
-        aspectRatio,
+        aspectRatio: "9:16",
         duration,
-        negativePrompt: negativePrompt.trim() || undefined,
-        cfgScale: cfgScale !== 0.5 ? cfgScale : undefined,
       });
       
       if (result.success) {
@@ -142,8 +105,6 @@ function AIGenerationWorkspace() {
         // Reset form
         setTitle("");
         setPrompt("");
-        setNegativePrompt("");
-        setCfgScale(0.5);
       } else {
         toast.error(`Failed to generate video: ${result.error || 'Unknown error'}`);
       }
@@ -167,7 +128,7 @@ function AIGenerationWorkspace() {
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-blue-900 dark:text-blue-300">Generation Limits</h3>
+            <h3 className="font-medium text-blue-900 dark:text-blue-300">Generation Status</h3>
             <p className="text-sm text-blue-700 dark:text-blue-400">
               Currently generating: {rateLimit.generatingCount}/{rateLimit.maxGenerating} | 
               Daily usage: {rateLimit.dailyCount}/{rateLimit.maxDaily}
@@ -190,18 +151,60 @@ function AIGenerationWorkspace() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Form */}
-        <div className="space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           <div>
-            <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Generate Your Viral Short</h2>
+            <h2 className="text-xl font-semibold mb-4 text-slate-900 dark:text-white">Create Your Video</h2>
             <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Powered by Kling V2 Master - the most advanced text-to-video AI model with enhanced motion quality, 
-              lifelike characters, and blockbuster-quality scene generation.
+              Choose a style or describe your own video idea. All videos are created in vertical format perfect for YouTube Shorts.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Preset Styles */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-slate-900 dark:text-white">Quick Start Styles</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <PresetCard
+                title="🎓 Educational"
+                description="Facts, tutorials, explanations"
+                example="Amazing facts about the ocean depths with dramatic underwater visuals"
+                onClick={() => setPrompt("Amazing facts about the ocean depths with dramatic underwater visuals, cinematic close-up shots of sea creatures, blue lighting")}
+              />
+              <PresetCard
+                title="🏃 Lifestyle"
+                description="Daily routines, wellness, productivity"
+                example="Morning routine in a minimalist apartment with natural lighting"
+                onClick={() => setPrompt("Morning routine in a minimalist apartment with natural lighting, smooth camera movements following daily activities")}
+              />
+              <PresetCard
+                title="🌍 Travel"
+                description="Places, cultures, adventures"
+                example="Breathtaking drone footage of mountain landscapes at sunrise"
+                onClick={() => setPrompt("Breathtaking drone footage of mountain landscapes at sunrise, aerial cinematography with golden hour lighting")}
+              />
+              <PresetCard
+                title="💡 Tech/Business"
+                description="Innovation, startups, tips"
+                example="Futuristic technology concepts with sleek visual effects"
+                onClick={() => setPrompt("Futuristic technology concepts with sleek visual effects, modern minimalist design, blue and white color scheme")}
+              />
+              <PresetCard
+                title="🎨 Creative"
+                description="Art, design, inspiration"
+                example="Time-lapse of an artist creating a colorful painting"
+                onClick={() => setPrompt("Time-lapse of an artist creating a colorful painting, close-up shots of brush strokes, vibrant colors")}
+              />
+              <PresetCard
+                title="🍔 Food"
+                description="Cooking, recipes, restaurants"
+                example="Slow motion food preparation with steam and sizzling sounds"
+                onClick={() => setPrompt("Slow motion food preparation with steam and sizzling sounds, close-up macro shots, warm kitchen lighting")}
+              />
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Video Title
@@ -211,7 +214,7 @@ function AIGenerationWorkspace() {
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., &apos;Amazing Space Facts&apos; or &apos;Productivity Life Hacks&apos;"
+                placeholder="e.g., 'Amazing Space Facts' or 'Productivity Life Hacks'"
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
                 required
               />
@@ -219,45 +222,29 @@ function AIGenerationWorkspace() {
 
             <div>
               <label htmlFor="prompt" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Video Prompt/Description
+                Describe Your Video
                 <span className="text-xs text-slate-500 ml-2">({prompt.length}/1000 characters)</span>
               </label>
               <textarea
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe what you want to see in your video... e.g., 'A stylish woman walks down a Tokyo street filled with warm glowing neon and animated city signage. The camera follows her gracefully as she moves through the bustling crowd, her coat flowing in the evening breeze.'"
-                rows={4}
+                placeholder="Describe what you want to see in your video... Be specific about actions, camera movements, and visual details. For example: &apos;A person walking through a futuristic city with neon lights and flying cars, cinematic camera movement following them.&apos;"
+                rows={5}
                 maxLength={1000}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400 resize-none"
                 required
               />
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                Be specific and descriptive. Include camera movements, character actions, and scene details for best results.
+                The more specific and detailed your description, the better your video will be.
               </p>
             </div>
 
-            {/* Basic Settings */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="aspectRatio" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Aspect Ratio
-                </label>
-                <select
-                  id="aspectRatio"
-                  value={aspectRatio}
-                  onChange={(e) => setAspectRatio(e.target.value as "16:9" | "9:16" | "1:1")}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                >
-                  <option value="16:9">Landscape (16:9)</option>
-                  <option value="9:16">Portrait (9:16)</option>
-                  <option value="1:1">Square (1:1)</option>
-                </select>
-              </div>
-
+            {/* Settings */}
+            <div className="grid grid-cols-1 max-w-xs">
               <div>
                 <label htmlFor="duration" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                  Duration
+                  Video Length
                 </label>
                 <select
                   id="duration"
@@ -271,70 +258,6 @@ function AIGenerationWorkspace() {
               </div>
             </div>
 
-            {/* Advanced Settings Toggle */}
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
-              >
-                <svg 
-                  className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                Advanced Settings
-              </button>
-
-              {showAdvanced && (
-                <div className="mt-4 space-y-4">
-                  <div>
-                    <label htmlFor="negativePrompt" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Negative Prompt (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      id="negativePrompt"
-                      value={negativePrompt}
-                      onChange={(e) => setNegativePrompt(e.target.value)}
-                      placeholder="Things to avoid (e.g., &apos;blur, distort, low quality, text, watermark&apos;)"
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-400"
-                    />
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Specify what you don&apos;t want in the video to improve quality
-                    </p>
-                  </div>
-
-                  <div>
-                    <label htmlFor="cfgScale" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      CFG Scale: {cfgScale}
-                    </label>
-                    <input
-                      type="range"
-                      id="cfgScale"
-                      min="0"
-                      max="2"
-                      step="0.1"
-                      value={cfgScale}
-                      onChange={(e) => setCfgScale(parseFloat(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      <span>More Creative (0.0)</span>
-                      <span>Balanced (0.5)</span>
-                      <span>More Accurate (2.0)</span>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Controls how closely the model follows your prompt vs. being creative
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
             <button
               type="submit"
               disabled={isSubmitting || !title.trim() || !prompt.trim() || prompt.length > 1000 || !rateLimit.canCreateVideo}
@@ -343,7 +266,7 @@ function AIGenerationWorkspace() {
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Submitting...
+                  Creating...
                 </>
               ) : !rateLimit.canCreateVideo ? (
                 <>
@@ -353,7 +276,7 @@ function AIGenerationWorkspace() {
               ) : (
                 <>
                   <span>🎬</span>
-                  Generate Video with Kling V2 Master
+                  Create Video
                 </>
               )}
             </button>
@@ -361,7 +284,7 @@ function AIGenerationWorkspace() {
             {!rateLimit.canCreateVideo && (
               <p className="text-sm text-slate-600 dark:text-slate-400 text-center">
                 {rateLimit.generatingCount >= rateLimit.maxGenerating 
-                  ? "Please wait for some videos to complete before generating more."
+                  ? "Please wait for some videos to complete before creating more."
                   : `Daily limit reached. Resets in ${formatTimeRemaining(rateLimit.timeUntilReset)}.`
                 }
               </p>
@@ -369,38 +292,43 @@ function AIGenerationWorkspace() {
           </form>
         </div>
 
-        {/* Preview/Tips */}
+        {/* Tips */}
         <div className="space-y-6">
           <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
-            <h3 className="font-semibold mb-4 text-slate-900 dark:text-white">💡 Pro Tips for Viral Shorts</h3>
+            <h3 className="font-semibold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+              <span>💡</span>
+              Tips for Great Videos
+            </h3>
             <div className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
-                <span>Include specific camera movements: &quot;drone shot&quot;, &quot;close-up&quot;, &quot;tracking shot&quot;</span>
+                <span>Add camera movements like &quot;drone shot&quot;, &quot;close-up&quot;, or &quot;tracking&quot;</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
-                <span>Describe character actions and emotions in detail</span>
+                <span>Describe actions and emotions in detail</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
-                <span>Set the scene with lighting and atmosphere: &quot;golden hour&quot;, &quot;neon lights&quot;</span>
+                <span>Set the mood with lighting: &quot;golden hour&quot;, &quot;neon lights&quot;, &quot;dramatic shadows&quot;</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-green-500 mt-0.5">✓</span>
-                <span>Use sequential actions for dynamic content</span>
+                <span>Include multiple actions for dynamic content</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-lg border border-amber-200 dark:border-amber-500">
-            <h3 className="font-semibold mb-2 text-amber-800 dark:text-amber-300">⚡ Kling V2 Master Features</h3>
-            <ul className="space-y-1 text-sm text-amber-700 dark:text-amber-400">
-              <li>• Enhanced motion quality and physics</li>
-              <li>• Lifelike character expressions</li>
-              <li>• Blockbuster cinematography</li>
-              <li>• Complex sequential actions</li>
-            </ul>
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-500">
+            <h3 className="font-semibold mb-2 text-purple-900 dark:text-purple-300 flex items-center gap-2">
+              <span>🎨</span>
+              Example Prompts
+            </h3>
+            <div className="space-y-2 text-sm text-purple-800 dark:text-purple-200">
+              <p className="italic">&quot;A cat wearing sunglasses walking in slow motion through a field of flowers, cinematic close-up shot&quot;</p>
+              <p className="italic">&quot;Time-lapse of a city at night with traffic lights creating light trails, aerial view&quot;</p>
+              <p className="italic">&quot;A coffee cup steaming on a wooden table, cozy morning light streaming through window&quot;</p>
+            </div>
           </div>
         </div>
       </div>
@@ -408,43 +336,88 @@ function AIGenerationWorkspace() {
   );
 }
 
-function TemplateWorkspace() {
+function PresetCard({ 
+  title, 
+  description, 
+  example, 
+  onClick 
+}: { 
+  title: string; 
+  description: string; 
+  example: string; 
+  onClick: () => void; 
+}) {
   return (
-    <div className="text-center py-12">
-      <div className="text-6xl mb-4">📋</div>
-      <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Templates Coming Soon</h3>
-      <p className="text-slate-600 dark:text-slate-300 mb-6">
-        Pre-made viral templates will be available here
-      </p>
-      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 max-w-md mx-auto">
-        <h4 className="font-medium text-slate-900 dark:text-white mb-2">What&apos;s Coming:</h4>
-        <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1 text-left">
-          <li>• Educational fact templates</li>
-          <li>• Motivational quote formats</li>
-          <li>• Product showcase layouts</li>
-          <li>• Storytelling structures</li>
-        </ul>
+    <button
+      onClick={onClick}
+      className="text-left p-4 border border-slate-200 dark:border-slate-600 rounded-lg hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-lg">{title.split(' ')[0]}</span>
+        <span className="font-medium text-slate-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">
+          {title.split(' ').slice(1).join(' ')}
+        </span>
       </div>
-    </div>
+      <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{description}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-500 italic">&quot;{example}&quot;</p>
+    </button>
   );
 }
 
-function UploadWorkspace() {
+function PlanUpgradePrompt() {
   return (
-    <div className="text-center py-12">
-      <div className="text-6xl mb-4">📤</div>
-      <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Upload & Transform Coming Soon</h3>
-      <p className="text-slate-600 dark:text-slate-300 mb-6">
-        Upload your content and transform it into viral shorts
-      </p>
-      <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-6 max-w-md mx-auto">
-        <h4 className="font-medium text-slate-900 dark:text-white mb-2">What&apos;s Coming:</h4>
-        <ul className="text-sm text-slate-600 dark:text-slate-300 space-y-1 text-left">
-          <li>• Video to shorts conversion</li>
-          <li>• Audio podcast highlights</li>
-          <li>• Blog post to video</li>
-          <li>• Social media repurposing</li>
-        </ul>
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-500 rounded-xl p-8 text-center">
+        <div className="mb-6">
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            Unlock Video Generation
+          </h2>
+          <p className="text-slate-600 dark:text-slate-300 text-lg">
+            Upgrade to Pro to start creating viral YouTube shorts with AI
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="text-2xl mb-2">🎬</div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">AI Video Generation</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Create viral shorts with advanced AI technology</p>
+          </div>
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="text-2xl mb-2">⚡</div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Fast Processing</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Generate videos in minutes, not hours</p>
+          </div>
+          <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600">
+            <div className="text-2xl mb-2">📈</div>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Viral Optimization</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">Content optimized for YouTube&apos;s algorithm</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            href="/pricing"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-sm hover:shadow"
+          >
+            View Plans & Pricing
+          </Link>
+          <Link
+            href="/dashboard/videos"
+            className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-8 py-3 rounded-lg font-semibold transition-colors"
+          >
+            View Existing Videos
+          </Link>
+        </div>
+
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-6">
+          Already subscribed? It may take a few minutes for your plan to activate.
+        </p>
       </div>
     </div>
   );

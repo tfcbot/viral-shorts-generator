@@ -51,11 +51,13 @@ export default function VideosPage() {
   // Fetch rate limit info
   const rateLimit = useQuery(api.videos.checkRateLimit) || {
     canCreateVideo: true,
+    hasVideoGenerationAccess: true,
     generatingCount: 0,
     maxGenerating: 5,
     dailyCount: 0,
     maxDaily: 20,
     timeUntilReset: 0,
+    planInfo: null,
   };
 
   // Filter and sort videos
@@ -89,23 +91,35 @@ export default function VideosPage() {
           <p className="text-slate-600 dark:text-slate-300 mt-1">Manage and track all your AI-generated videos</p>
         </div>
         <div className="flex items-center gap-3">
-          {rateLimit.canCreateVideo ? (
+          {rateLimit.hasVideoGenerationAccess ? (
+            rateLimit.canCreateVideo ? (
+              <Link
+                href="/dashboard/studio"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm hover:shadow"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create New
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-2 bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-400 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+                </svg>
+                Limit Reached
+              </span>
+            )
+          ) : (
             <Link
-              href="/dashboard/studio"
+              href="/pricing"
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm hover:shadow"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Create New
+              Upgrade Plan
             </Link>
-          ) : (
-            <span className="inline-flex items-center gap-2 bg-slate-300 dark:bg-slate-600 text-slate-500 dark:text-slate-400 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
-              </svg>
-              Limit Reached
-            </span>
           )}
         </div>
       </div>
@@ -118,8 +132,25 @@ export default function VideosPage() {
         <StatCard title="Failed" value={stats.failed.toString()} icon="❌" />
       </div>
 
-      {/* Rate Limit Info */}
-      {!rateLimit.canCreateVideo && (
+      {/* Plan and Rate Limit Info */}
+      {!rateLimit.hasVideoGenerationAccess ? (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium text-blue-800 dark:text-blue-300">Pro Subscription Required</h3>
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                Video generation requires an active Pro subscription. Upgrade to start creating viral shorts.
+              </p>
+            </div>
+            <Link
+              href="/pricing"
+              className="text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 text-sm font-medium"
+            >
+              View Plans →
+            </Link>
+          </div>
+        </div>
+      ) : !rateLimit.canCreateVideo && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-500 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>

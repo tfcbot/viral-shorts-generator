@@ -40,7 +40,7 @@ function RedirectToDashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push("/dashboard");
+    router.push("/dashboard/studio");
   }, [router]);
 
   return (
@@ -48,7 +48,7 @@ function RedirectToDashboard() {
       <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-blue-600 rounded-full" role="status" aria-label="loading">
         <span className="sr-only">Redirecting...</span>
       </div>
-      <p className="text-lg mt-4 text-slate-800 dark:text-slate-200">Redirecting to dashboard...</p>
+      <p className="text-lg mt-4 text-slate-800 dark:text-slate-200">Redirecting to studio...</p>
     </div>
   );
 }
@@ -68,15 +68,9 @@ function LandingContent() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <SignUpButton mode="modal">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium text-lg transition-colors w-full sm:w-auto shadow-sm hover:shadow">
-                Get Started Free
-              </button>
-            </SignUpButton>
-            
             <SignInButton mode="modal">
-              <button className="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-500 px-6 py-3 rounded-md font-medium text-lg transition-colors w-full sm:w-auto">
-                Sign In
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium text-lg transition-colors w-full sm:w-auto shadow-sm hover:shadow">
+                Start Now
               </button>
             </SignInButton>
           </div>

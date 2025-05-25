@@ -10,7 +10,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   
   const navItems = [
-    { name: "Dashboard", path: "/dashboard", icon: "🏠", exact: true },
     { name: "Studio", path: "/dashboard/studio", icon: "🎬" },
     { name: "Videos", path: "/dashboard/videos", icon: "🎥" },
   ];
@@ -28,9 +27,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = item.exact 
-              ? pathname === item.path 
-              : pathname === item.path || pathname.startsWith(`${item.path}/`);
+            const isActive = pathname === item.path || pathname.startsWith(`${item.path}/`);
             
             return (
               <Link
@@ -92,7 +89,7 @@ function MobileMenu({
   navItems, 
   currentPath 
 }: { 
-  navItems: { name: string; path: string; icon: string; exact?: boolean }[];
+  navItems: { name: string; path: string; icon: string }[];
   currentPath: string;
 }) {
   return (
@@ -108,9 +105,7 @@ function MobileMenu({
       <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden z-10 hidden group-hover:block">
         <nav className="py-2">
           {navItems.map((item) => {
-            const isActive = item.exact 
-              ? currentPath === item.path 
-              : currentPath === item.path || currentPath.startsWith(`${item.path}/`);
+            const isActive = currentPath === item.path || currentPath.startsWith(`${item.path}/`);
             
             return (
               <Link
