@@ -1,103 +1,153 @@
-import { Id } from '@/convex/_generated/dataModel'
-
-export const mockUser = {
-  id: 'user-123',
-  firstName: 'Test',
-  lastName: 'User',
-  emailAddresses: [{ emailAddress: 'test@example.com' }],
-}
+// Enhanced test factories for comprehensive testing
 
 export const mockVideo = {
-  _id: 'video-123' as Id<'videos'>,
-  userId: 'user-123',
-  title: 'Test Video',
-  prompt: 'A test video prompt',
+  _id: 'video-123',
+  title: 'Beautiful Sunset Video',
+  prompt: 'A beautiful sunset over the ocean with waves crashing on the shore',
   status: 'completed' as const,
-  storageId: 'storage-123' as Id<'_storage'>,
-  createdAt: Date.now(),
-  completedAt: Date.now(),
   url: 'https://example.com/video.mp4',
+  thumbnailUrl: 'https://example.com/thumbnail.jpg',
+  createdAt: Date.now() - 1000 * 60 * 60, // 1 hour ago
+  updatedAt: Date.now() - 1000 * 60 * 30, // 30 minutes ago
+  userId: 'user_123',
   metadata: {
-    duration: 10,
     aspectRatio: '16:9',
-    fileSize: 1024000,
-    model: 'kling-v2-master',
+    duration: 5,
     resolution: '1280x720',
+    fileSize: 1024 * 1024 * 10, // 10MB
   },
+  falRequestId: 'fal-request-123',
+  storageId: 'storage-123',
 }
 
 export const mockGeneratingVideo = {
-  ...mockVideo,
-  _id: 'video-generating-123' as Id<'videos'>,
+  _id: 'video-generating-456',
+  title: 'Mountain Landscape Video',
+  prompt: 'A majestic mountain landscape with snow-capped peaks and flowing rivers',
   status: 'generating' as const,
-  storageId: undefined,
-  completedAt: undefined,
-  url: undefined,
+  url: null,
+  thumbnailUrl: null,
+  createdAt: Date.now() - 1000 * 60 * 10, // 10 minutes ago
+  updatedAt: Date.now() - 1000 * 60 * 5, // 5 minutes ago
+  userId: 'user_123',
+  metadata: {
+    aspectRatio: '9:16',
+    duration: 10,
+  },
+  falRequestId: 'fal-request-456',
+  storageId: null,
 }
 
 export const mockFailedVideo = {
-  ...mockVideo,
-  _id: 'video-failed-123' as Id<'videos'>,
+  _id: 'video-failed-789',
+  title: 'Failed Video Generation',
+  prompt: 'A complex scene that failed to generate',
   status: 'failed' as const,
-  error: 'Generation failed',
-  storageId: undefined,
-  completedAt: undefined,
-  url: undefined,
+  url: null,
+  thumbnailUrl: null,
+  createdAt: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
+  updatedAt: Date.now() - 1000 * 60 * 60, // 1 hour ago
+  userId: 'user_123',
+  metadata: {
+    aspectRatio: '1:1',
+    duration: 5,
+  },
+  falRequestId: 'fal-request-789',
+  storageId: null,
+  error: 'Generation failed due to content policy violation',
+}
+
+export const mockVideoStats = {
+  total: 15,
+  completed: 12,
+  generating: 2,
+  failed: 1,
+  todayCount: 3,
+  successRate: 80,
 }
 
 export const mockRateLimit = {
   canCreateVideo: true,
+  videosGenerated: 3,
+  maxVideos: 10,
   generatingCount: 1,
-  maxGenerating: 5,
-  dailyCount: 3,
-  maxDaily: 20,
-  timeUntilReset: 86400000, // 24 hours
+  maxGenerating: 3,
+  timeUntilReset: 0,
+  resetTime: Date.now() + 1000 * 60 * 60 * 24, // 24 hours from now
 }
 
-export const mockVideoStats = {
-  total: 10,
-  generating: 2,
-  completed: 7,
-  failed: 1,
+export const mockUserSession = {
+  _id: 'session-123',
+  userId: 'user_123',
+  lastActivity: Date.now() - 1000 * 60 * 15, // 15 minutes ago
+  preferences: {
+    defaultAspectRatio: '16:9',
+    autoRefreshInterval: 30000,
+    notificationsEnabled: true,
+  },
+  stats: {
+    totalVideosGenerated: 15,
+    totalTimeSpent: 1000 * 60 * 60 * 5, // 5 hours
+    favoriteAspectRatio: '16:9',
+  },
 }
 
-// Enhanced video with new state management fields
-export const mockEnhancedVideo = {
+// Factory functions for creating test data
+export const createMockVideo = (overrides: Partial<typeof mockVideo> = {}) => ({
   ...mockVideo,
-  errorState: {
-    hasError: false,
-    errorType: '',
-    errorMessage: '',
-    lastErrorAt: 0,
-    retryCount: 0,
-  },
-  urlState: {
-    lastGenerated: Date.now(),
-    expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
-    needsRefresh: false,
-  },
-}
+  ...overrides,
+})
 
-export const mockVideoWithError = {
-  ...mockEnhancedVideo,
-  _id: 'video-error-123' as Id<'videos'>,
-  status: 'failed' as const,
-  errorState: {
-    hasError: true,
-    errorType: 'generation',
-    errorMessage: 'FAL.ai API error',
-    lastErrorAt: Date.now(),
-    retryCount: 1,
-  },
-}
+export const createMockGeneratingVideo = (overrides: Partial<typeof mockGeneratingVideo> = {}) => ({
+  ...mockGeneratingVideo,
+  ...overrides,
+})
 
-export const mockVideoWithExpiredUrl = {
-  ...mockEnhancedVideo,
-  _id: 'video-expired-123' as Id<'videos'>,
-  urlState: {
-    lastGenerated: Date.now() - 25 * 60 * 60 * 1000, // 25 hours ago
-    expiresAt: Date.now() - 1 * 60 * 60 * 1000, // 1 hour ago
-    needsRefresh: true,
-  },
+export const createMockFailedVideo = (overrides: Partial<typeof mockFailedVideo> = {}) => ({
+  ...mockFailedVideo,
+  ...overrides,
+})
+
+export const createMockVideoStats = (overrides: Partial<typeof mockVideoStats> = {}) => ({
+  ...mockVideoStats,
+  ...overrides,
+})
+
+export const createMockRateLimit = (overrides: Partial<typeof mockRateLimit> = {}) => ({
+  ...mockRateLimit,
+  ...overrides,
+})
+
+export const createMockUserSession = (overrides: Partial<typeof mockUserSession> = {}) => ({
+  ...mockUserSession,
+  ...overrides,
+})
+
+// Helper functions for common test scenarios
+export const createRateLimitExceeded = () => createMockRateLimit({
+  canCreateVideo: false,
+  videosGenerated: 10,
+  maxVideos: 10,
+  timeUntilReset: 1000 * 60 * 60 * 12, // 12 hours
+})
+
+export const createTooManyGenerating = () => createMockRateLimit({
+  canCreateVideo: false,
+  generatingCount: 3,
+  maxGenerating: 3,
+})
+
+export const createEmptyVideoList = () => []
+
+export const createVideoList = (count: number = 5) => {
+  const videos = []
+  for (let i = 0; i < count; i++) {
+    videos.push(createMockVideo({
+      _id: `video-${i}`,
+      title: `Test Video ${i}`,
+      createdAt: Date.now() - (i * 1000 * 60 * 60), // Each video 1 hour older
+    }))
+  }
+  return videos
 }
 
