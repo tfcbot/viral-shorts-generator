@@ -28,6 +28,7 @@ CONVEX_DEPLOY_KEY=convex_key
 2. Go to API Keys and copy the NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY to add to vercel
 3. In your Clerk dashboard, create a new JWT template for Convex:
     - Go to JWT Templates → Add new and select Convex
+4. Enable billing and create a pro plan. Go to the subscriptions follow the instructions there. 
 
 
 ### 3. Set up Convex
