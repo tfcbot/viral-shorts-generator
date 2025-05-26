@@ -9,61 +9,47 @@ A Next.js application for creating viral YouTube shorts using AI video generatio
 - Clerk (authentication)
 - Fal.ai (AI video generation)
 - Tailwind CSS
-
-## 🚀 Deploy to Vercel
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator&env=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,CONVEX_DEPLOY_KEY&envDescription=API%20keys%20needed%20for%20authentication%20and%20AI%20video%20generation&envLink=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator%23setup-instructions)
-
 ## Setup Instructions
 
-### 1. Clone this repository
+### 1. Deploy to Vercel
 
-### 2. Set up Convex Backend
-```bash
-npm install -g convex
-npx convex deploy
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator&env=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,CLERK_SECRET_KEY,CONVEX_DEPLOY_KEY&envDescription=API%20keys%20needed%20for%20authentication%20and%20AI%20video%20generation&envLink=https%3A%2F%2Fgithub.com%2Ftfcbot%2Fviral-shorts-generator%23setup-instructions)
+
+You will need to add in environment variables before deploying 
+
 ```
-Copy the deployment URL and add it as `CONVEX_DEPLOYMENT` to your Vercel environment variables.
-
-### 3. Set up Clerk Authentication
-- Create account at [clerk.com](https://clerk.com)
-- Create new application
-- Get publishable key and secret key
-- Create JWT template named "convex"
-- Get the JWT issuer domain
-
-### 4. Set up Fal.ai
-- Create account at [fal.ai](https://fal.ai)
-- Get your API key from dashboard
-
-### 5. Deploy to Vercel
-Click the deploy button above and add these environment variables:
-
-```env
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
-CLERK_JWT_ISSUER_DOMAIN=https://your-clerk-domain.clerk.accounts.dev
-FAL_KEY=your-fal-api-key
+CONVEX_DEPLOY_KEY=convex_key
 ```
+### 2. Set up Clerk
 
-### 6. Configure Authentication
-- In Convex dashboard: Add Clerk JWT issuer domain
-- In Clerk dashboard: Set production domain
+1. Create a Clerk application at [clerk.com](https://clerk.com/)
+2. Go to API Keys and copy the NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY to add to vercel
+3. In your Clerk dashboard, create a new JWT template for Convex:
+    - Go to JWT Templates → Add new and select Convex
 
-## Local Development
 
-1. Clone and install:
-```bash
-git clone <repository-url>
-cd viral-shorts-generator
-bun install
-```
+### 3. Set up Convex
+1. Create account at [convex.dev](https://convex.dev)
+2. Create new project
+3. In the project settings →  URL & Deploy Key, generate the deploy key. 
+4. Copy that into the vercel deployment
+5. In settings →  environment variables add CLERK_JWT_ISSUER_DOMAIN. 
+    - You can grab this from the JWT Template its called `issuer`
+6. Add FAL_KEY as an environment variable. 
+    - Create account at [fal.ai](https://fal.ai)
+    - Get your API key from dashboard
+    
 
-2. Create `.env.local` with the environment variables above
+### 5. Update the Vercel Build Command
 
-3. Start development:
-```bash
-bun run dev
-```
+After you have added the environment variables to vercel, the first deployment will fail. That is because vercel needs to know how to deploy convex. 
+
+1. Go the project settings page 
+2. Go to Build and Deployment 
+3. Overide the build command with `npx convex deploy --cmd='npm run build'`
+
 
 ## Project Structure
 
